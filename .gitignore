@@ -1,0 +1,9 @@
+*~
+.*.sw?
+*.pyc
+*.pyo
+.DS_Store
+*.diff
+*.patch
+*.idea
+*.egg-info
