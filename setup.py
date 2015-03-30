@@ -7,6 +7,12 @@ requires = [
     'six',
 ]
 
+packages = [
+    "advocate",
+    "advocate.packages",
+    "advocate.packages.ipaddress"
+]
+
 version = ''
 with open('advocate/__init__.py', 'r') as fd:
     version = re.search(r'^__version__\s*=\s*[\'"]([^\'"]*)[\'"]',
@@ -15,7 +21,7 @@ with open('advocate/__init__.py', 'r') as fd:
 setup(
     name='advocate',
     version=version,
-    packages=['advocate'],
+    packages=packages,
     install_requires=requires,
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',
