@@ -57,14 +57,37 @@ If you can think of any improvements to the IPv6 handling, please submit an issu
 
 ## Examples
 
-*TODO*
+Advocate is a drop-in replacement for `requests`, just replace `requests` with
+`advocate` where necessary and you should be good to go:
+
+```python
+import advocate
+print advocate.get("http://google.com/")
+```
+
+Advocate also provides a subclassed `requests.Session` with sane defaults for 
+blacklisting already set up:
+
+```python
+import advocate
+sess = advocate.Session()
+print sess.get("http://google.com/")
+```
+
+**TODO**: Examples for custom blacklist rules
 
 ## Caveats
 
-Be careful about mounting other adapters on the "http://" or "https://" schemes,
+* Be careful about mounting other adapters on the "http://" or "https://" schemes,
 you'll clobber Advocate's adapter and all the safety will be gone! For that matter,
 be careful about mounting *any* adapters on an `advocate.Session`. You'll need
 to subclass any existing adapters to get the benefit of Advocate's blacklisting.
+
+* Advocate hasn't been tested with HTTP proxies, it's the proxy's job to do the 
+blacklisting for any requests that go through it. Any requests that bypass the
+proxy should properly handle blacklisting.
+
+* Proper IPv6 support is still a WIP as noted above
 
 ## Acknowledgements
 
