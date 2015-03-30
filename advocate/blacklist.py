@@ -8,10 +8,11 @@ from .exceptions import BlacklistException
 
 
 class AdvocateBlacklist(object):
+    _6TO4_RELAY_NET = ipaddress.ip_network("192.88.99.0/24")
+
     def __init__(
             self,
-            ipv4_blacklist=None,
-            ipv6_blacklist=None,
+            ip_blacklist=None,
             port_whitelist=None,
             port_blacklist=None,
             allow_ipv6=False,
@@ -23,10 +24,9 @@ class AdvocateBlacklist(object):
             allow_private=False,
             allow_reserved=False,
             allow_site_local=False,
-            allow_unspecified=False
+            allow_unspecified=False,
     ):
-        self.ipv4_blacklist = ipv4_blacklist
-        self.ipv6_blacklist = ipv6_blacklist
+        self.ip_blacklist = ip_blacklist
         self.port_whitelist = port_whitelist
         self.port_blacklist = port_blacklist
         self.allow_ipv6 = allow_ipv6
@@ -45,8 +45,10 @@ class AdvocateBlacklist(object):
             addr_ip = ipaddress.ip_address(addr_ip)
 
         if addr_ip.version == 4:
-            if self.ipv4_blacklist:
-                if any(addr_ip in net for net in self.ipv4_blacklist):
+            if not self.allow_private and not addr_ip.is_private:
+                # IPs for carrier-grade NAT. Seems weird that it doesn't set
+                # `is_private`, but we need to check `not is_global`
+                if not ipaddress.ip_network(addr_ip).is_global:
                     return False
         elif addr_ip.version == 6:
             # I'm erring towards disallowing IPv6 just because I don't have a
@@ -80,18 +82,17 @@ class AdvocateBlacklist(object):
             if not all(self.is_ip_allowed(addr_v4) for addr_v4 in v4_nested):
                 return False
 
-            # Is this address in a blacklisted range?
-            if self.ipv6_blacklist:
-                if any(addr_ip in net for net in self.ipv6_blacklist):
-                    return False
-
             # fec0::*, apparently deprecated?
             if not self.allow_site_local and addr_ip.is_site_local:
                 return False
         else:
             raise BlacklistException("Unsupported IP version(?): %r" % addr_ip)
 
-        # 169.25.XXX.XXX, AWS uses these for autoconfiguration
+        if self.ip_blacklist:
+            if any(addr_ip in net for net in self.ip_blacklist):
+                return False
+
+        # 169.254.XXX.XXX, AWS uses these for autoconfiguration
         if not self.allow_link_local and addr_ip.is_link_local:
             return False
         # 127.0.0.1, ::1, etc.
@@ -102,9 +103,14 @@ class AdvocateBlacklist(object):
         # 192.168.XXX.XXX, 10.XXX.XXX.XXX
         if not self.allow_private and addr_ip.is_private:
             return False
-        # 255.255.255.255, ::ffff:XXXX:XXXX (v6->v4)
-        if not self.allow_reserved and addr_ip.is_reserved:
-            return False
+        # 255.255.255.255, ::ffff:XXXX:XXXX (v6->v4) mapping
+        if not self.allow_reserved:
+            if addr_ip.is_reserved:
+                return False
+            # There's no reason to connect directly to a 6to4 relay
+            if addr_ip in self._6TO4_RELAY_NET:
+                return False
+
         # 0.0.0.0
         if not self.allow_unspecified and addr_ip.is_unspecified:
             return False
