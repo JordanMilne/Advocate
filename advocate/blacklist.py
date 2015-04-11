@@ -1,3 +1,7 @@
+import fnmatch
+import re
+import six
+
 # Try to use the "real" ipaddress before we try for the backported version.
 try:
     import ipaddress
@@ -15,6 +19,7 @@ class AdvocateBlacklist(object):
             ip_blacklist=None,
             port_whitelist=None,
             port_blacklist=None,
+            hostname_blacklist=None,
             allow_ipv6=False,
             allow_teredo=False,
             allow_6to4=False,
@@ -26,9 +31,10 @@ class AdvocateBlacklist(object):
             allow_site_local=False,
             allow_unspecified=False,
     ):
-        self.ip_blacklist = ip_blacklist
-        self.port_whitelist = port_whitelist
-        self.port_blacklist = port_blacklist
+        self.ip_blacklist = ip_blacklist or set()
+        self.port_whitelist = port_whitelist or set()
+        self.port_blacklist = port_blacklist or set()
+        self.hostname_blacklist = hostname_blacklist or set()
         self.allow_ipv6 = allow_ipv6
         self.allow_teredo = allow_teredo
         self.allow_6to4 = allow_6to4
@@ -88,9 +94,8 @@ class AdvocateBlacklist(object):
         else:
             raise BlacklistException("Unsupported IP version(?): %r" % addr_ip)
 
-        if self.ip_blacklist:
-            if any(addr_ip in net for net in self.ip_blacklist):
-                return False
+        if any(addr_ip in net for net in self.ip_blacklist):
+            return False
 
         # 169.254.XXX.XXX, AWS uses these for autoconfiguration
         if not self.allow_link_local and addr_ip.is_link_local:
@@ -118,33 +123,61 @@ class AdvocateBlacklist(object):
         # It doesn't look bad, so... it's must be ok!
         return True
 
+    def _hostname_matches_pattern(self, hostname, pattern):
+        # If they specified a string, just assume they only want basic globbing.
+        # This stops people from not realizing they're dealing in REs and
+        # not escaping their periods unless they specifically pass in an RE.
+        # This has the added benefit of letting us sanely globbed IDNs by
+        # default.
+        if isinstance(pattern, six.string_types):
+            pattern = fnmatch.translate(pattern.encode("idna").lower())
+        return re.match(pattern, hostname)
+
+    def _is_hostname_allowed(self, hostname):
+        # Sometimes (like with "external" services that your IP has privileged
+        # access to) you might not always know the IP range to blacklist access
+        # to, or the `A` record might change without you noticing.
+        # For e.x.: `foocorp.external.org`.
+        #
+        # Another option is doing something like:
+        #
+        #     for addrinfo in socket.getaddrinfo("foocorp.external.org", 80):
+        #         global_blacklist.ip_blacklist.add(ip_address(addrinfo[4][0]))
+        #
+        # but that's not always a good idea if they're behind a third-party lb.
+        for pattern in self.hostname_blacklist:
+            if self._hostname_matches_pattern(hostname, pattern):
+                return False
+        return True
+
     def is_addrinfo_allowed(self, addrinfo):
         assert(len(addrinfo) == 5)
         # XXX: Do we care about any of the other elements? Guessing not.
-        address = addrinfo[4]
+        family, socktype, proto, canonname, sockaddr = addrinfo
 
         # The 4th elem inaddrinfo may either be a touple of two or four items,
         # depending on whether we're dealing with IPv4 or v6
-        if len(address) == 2:
+        if len(sockaddr) == 2:
             # v4
-            ip, port = address
-        elif len(address) == 4:
+            ip, port = sockaddr
+        elif len(sockaddr) == 4:
             # v6
             # XXX: what *are* `flow_info` and `scope_id`? Anything useful?
             # Seems like we can figure out all we need about the scope from
             # the `is_<x>` properties.
-            ip, port, flow_info, scope_id = address
+            ip, port, flow_info, scope_id = sockaddr
         else:
-            raise BlacklistException("Unexpected addrinfo format %r" % address)
+            raise BlacklistException("Unexpected addrinfo format %r" % sockaddr)
 
         # Probably won't help protect against SSRF, but might prevent our being
         # used to attack others' non-HTTP services. See
         # http://www.remote.org/jochen/sec/hfpa/
-        if self.port_whitelist:
-            if port not in self.port_whitelist:
-                return False
-        if self.port_blacklist:
-            if port in self.port_blacklist:
-                return False
+        if self.port_whitelist and port not in self.port_whitelist:
+            return False
+        if port in self.port_blacklist:
+            return False
+
+        if not self._is_hostname_allowed(canonname):
+            return False
 
         return self.is_ip_allowed(ip)

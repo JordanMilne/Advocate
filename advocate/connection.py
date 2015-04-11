@@ -8,6 +8,27 @@ from requests.packages.urllib3.util.connection import _set_socket_options
 from .exceptions import UnacceptableAddressException
 
 
+def advocate_getaddrinfo(host, port):
+    addrinfo = socket.getaddrinfo(
+        host,
+        port,
+        0,
+        socket.SOCK_STREAM,
+        0,
+        # We need what the DNS client sees the hostname as, correctly handles
+        # IDNs and tricky things like `private.foocorp.org\x00.google.com`.
+        # All IDNs will be converted to punycode.
+        socket.AI_CANONNAME,
+    )
+    if addrinfo:
+        # Apparently the canonical name is only included in the first record?
+        # Add it to all of them.
+        assert(len(addrinfo[0]) == 5)
+        canonname = addrinfo[0][3]
+        addrinfo = map(lambda x: (x[0], x[1], x[2], canonname, x[4]), addrinfo)
+    return addrinfo
+
+
 # Lifted from requests' urllib3, which in turn lifted it from `socket.py`. Oy!
 def _create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
                        source_address=None, socket_options=None,
@@ -26,7 +47,7 @@ def _create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
 
     host, port = address
     err = None
-    addrinfo = socket.getaddrinfo(host, port, 0, socket.SOCK_STREAM)
+    addrinfo = advocate_getaddrinfo(host, port)
     if addrinfo:
         for res in addrinfo:
             # Are we allowed to connect with this result?

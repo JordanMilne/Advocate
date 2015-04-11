@@ -1,8 +1,10 @@
-import socket
+# coding=utf-8
+
 import unittest
 
 import advocate
 from advocate import AdvocateBlacklist
+from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import UnacceptableAddressException
 from advocate.packages import ipaddress
 
@@ -13,6 +15,7 @@ def permissive_blacklist(**kwargs):
         ip_blacklist=None,
         port_whitelist=None,
         port_blacklist=None,
+        hostname_blacklist=None,
         allow_ipv6=True,
         allow_teredo=True,
         allow_6to4=True,
@@ -152,7 +155,7 @@ class AddrInfoTests(unittest.TestCase):
     def _is_addrinfo_allowed(self, host, port, **kwargs):
         bl = permissive_blacklist(**kwargs)
         allowed = False
-        for res in socket.getaddrinfo(host, port):
+        for res in advocate_getaddrinfo(host, port):
             if bl.is_addrinfo_allowed(res):
                 allowed = True
         return allowed
@@ -161,6 +164,20 @@ class AddrInfoTests(unittest.TestCase):
         self.assertFalse(
             self._is_addrinfo_allowed("192.168.0.1", 80, allow_private=False)
         )
+
+    def test_malformed_addrinfo(self):
+        # Alright, the addrinfo format is probably never going to change,
+        # but *what if it did?*
+        bl = permissive_blacklist()
+        addrinfo = advocate_getaddrinfo("example.com", 80)[0] + (1,)
+        self.assertRaises(Exception, lambda: bl.is_addrinfo_allowed(addrinfo))
+
+    def test_unexpected_proto(self):
+        # What if addrinfo returns info about a protocol we don't understand?
+        bl = permissive_blacklist()
+        addrinfo = list(advocate_getaddrinfo("example.com", 80)[0])
+        addrinfo[4] = addrinfo[4] + (1,)
+        self.assertRaises(Exception, lambda: bl.is_addrinfo_allowed(addrinfo))
 
     def test_port_whitelist(self):
         wl = (80, 10)
@@ -185,6 +202,45 @@ class AddrInfoTests(unittest.TestCase):
         self.assertTrue(
             self._is_addrinfo_allowed("192.168.0.1", 99, port_blacklist=bl)
         )
+
+
+class HostnameTests(unittest.TestCase):
+    def _is_hostname_allowed(self, host, **kwargs):
+        bl = permissive_blacklist(**kwargs)
+        addrinfo_allowed = False
+        for res in advocate_getaddrinfo(host, 80):
+            if bl.is_addrinfo_allowed(res):
+                return True
+        return False
+
+    def test_no_blacklist(self):
+        self.assertTrue(self._is_hostname_allowed("example.com"))
+
+    def test_idn(self):
+        # test some basic globs
+        self.assertFalse(self._is_hostname_allowed(
+            u"中国.icom.museum",
+            hostname_blacklist={"*.museum"}
+        ))
+        # case insensitive, please
+        self.assertFalse(self._is_hostname_allowed(
+            u"中国.icom.museum",
+            hostname_blacklist={"*.Museum"}
+        ))
+        # we should match both the punycoded domain
+        self.assertFalse(self._is_hostname_allowed(
+            u"中国.icom.museum",
+            hostname_blacklist={"xn--fiqs8s.*.museum"}
+        ))
+        # and the localized domain
+        self.assertFalse(self._is_hostname_allowed(
+            u"中国.icom.museum",
+            hostname_blacklist={u"中国.*.museum"}
+        ))
+        self.assertTrue(self._is_hostname_allowed(
+            u"example.com",
+            hostname_blacklist={u"中国.*.museum"}
+        ))
 
 
 class AdvocateWrapperTests(unittest.TestCase):
