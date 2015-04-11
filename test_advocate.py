@@ -1,12 +1,18 @@
 # coding=utf-8
 
+from __future__ import print_function
+
 import unittest
 
 import advocate
 from advocate import AdvocateBlacklist
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import UnacceptableAddressException
-from advocate.packages import ipaddress
+
+try:
+    import ipaddress
+except ImportError:
+    from advocate.packages import ipaddress
 
 
 def permissive_blacklist(**kwargs):
@@ -85,7 +91,7 @@ class BlackListIPTests(unittest.TestCase):
                 bad_ip = bad_netblock[ip_idx]
                 thing = bl.is_ip_allowed(bad_ip)
                 if thing or True:
-                    print i, bad_ip
+                    print(i, bad_ip)
                 self.assertFalse(thing)
 
     # TODO: something like the above for IPv6?

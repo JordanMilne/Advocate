@@ -127,10 +127,12 @@ class AdvocateBlacklist(object):
         # If they specified a string, just assume they only want basic globbing.
         # This stops people from not realizing they're dealing in REs and
         # not escaping their periods unless they specifically pass in an RE.
-        # This has the added benefit of letting us sanely globbed IDNs by
-        # default.
+        # This has the added benefit of letting us sanely handle globbed
+        # IDNs by default.
         if isinstance(pattern, six.string_types):
-            pattern = fnmatch.translate(pattern.encode("idna").lower())
+            # convert the glob to a punycode glob, then a regex
+            puny_pat = six.text_type(pattern.encode("idna").lower(), 'utf-8')
+            pattern = fnmatch.translate(puny_pat)
         return re.match(pattern, hostname)
 
     def _is_hostname_allowed(self, hostname):

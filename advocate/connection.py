@@ -26,7 +26,7 @@ def advocate_getaddrinfo(host, port):
         assert(len(addrinfo[0]) == 5)
         canonname = addrinfo[0][3]
         addrinfo = map(lambda x: (x[0], x[1], x[2], canonname, x[4]), addrinfo)
-    return addrinfo
+    return tuple(addrinfo)
 
 
 # Lifted from requests' urllib3, which in turn lifted it from `socket.py`. Oy!
