@@ -147,6 +147,10 @@ class AdvocateBlacklist(object):
         #         global_blacklist.ip_blacklist.add(ip_address(addrinfo[4][0]))
         #
         # but that's not always a good idea if they're behind a third-party lb.
+
+        # Oftentimes `AI_CANONNAME` doesn't correct the case, but will with
+        # stuff like `"LoCaLhOsT"`? Weird.
+        hostname = hostname.lower()
         for pattern in self.hostname_blacklist:
             if self._hostname_matches_pattern(hostname, pattern):
                 return False

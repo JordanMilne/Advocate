@@ -230,17 +230,15 @@ class HostnameTests(unittest.TestCase):
         ))
         # case insensitive, please
         self.assertFalse(self._is_hostname_allowed(
-            u"中国.icom.museum",
+            u"中国.icom.muSeum",
             hostname_blacklist={"*.Museum"}
         ))
-        # we should match both the punycoded domain
         self.assertFalse(self._is_hostname_allowed(
             u"中国.icom.museum",
             hostname_blacklist={"xn--fiqs8s.*.museum"}
         ))
-        # and the localized domain
         self.assertFalse(self._is_hostname_allowed(
-            u"中国.icom.museum",
+            "xn--fiqs8s.icom.museum",
             hostname_blacklist={u"中国.*.museum"}
         ))
         self.assertTrue(self._is_hostname_allowed(
