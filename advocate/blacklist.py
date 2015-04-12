@@ -2,13 +2,8 @@ import fnmatch
 import re
 import six
 
-# Try to use the "real" ipaddress before we try for the backported version.
-try:
-    import ipaddress
-except ImportError:
-    from .packages import ipaddress
-
 from .exceptions import BlacklistException
+from .packages import ipaddress
 
 
 class AdvocateBlacklist(object):
@@ -47,7 +42,8 @@ class AdvocateBlacklist(object):
         self.allow_unspecified = allow_unspecified
 
     def is_ip_allowed(self, addr_ip):
-        if not isinstance(addr_ip, ipaddress._BaseAddress):
+        if not isinstance(addr_ip,
+                          (ipaddress.IPv4Address, ipaddress.IPv6Address)):
             addr_ip = ipaddress.ip_address(addr_ip)
 
         if addr_ip.version == 4:

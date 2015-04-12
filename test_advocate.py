@@ -8,11 +8,7 @@ import advocate
 from advocate import AdvocateBlacklist
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import UnacceptableAddressException
-
-try:
-    import ipaddress
-except ImportError:
-    from advocate.packages import ipaddress
+from advocate.packages import ipaddress
 
 
 def permissive_blacklist(**kwargs):

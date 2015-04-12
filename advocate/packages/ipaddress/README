@@ -1,2 +1,3 @@
-from https://bitbucket.org/kwi/py2-ipaddress, any issues should be submitted there
-or to Python proper if they affect the upstream module
+ipaddress.py is from https://bitbucket.org/kwi/py2-ipaddress, any issues
+should be submitted there, or to Python proper if they affect the upstream
+module
