@@ -8,7 +8,7 @@ from requests.packages.urllib3.util.connection import _set_socket_options
 from .exceptions import UnacceptableAddressException
 
 
-def advocate_getaddrinfo(host, port):
+def advocate_getaddrinfo(host, port, get_canonname=False):
     addrinfo = socket.getaddrinfo(
         host,
         port,
@@ -18,15 +18,28 @@ def advocate_getaddrinfo(host, port):
         # We need what the DNS client sees the hostname as, correctly handles
         # IDNs and tricky things like `private.foocorp.org\x00.google.com`.
         # All IDNs will be converted to punycode.
-        socket.AI_CANONNAME,
+        socket.AI_CANONNAME if get_canonname else 0,
     )
-    if addrinfo:
+    if get_canonname:
+        addrinfo = fix_addrinfo_canonname(addrinfo)
+    return addrinfo
+
+
+def fix_addrinfo_canonname(records):
+    """
+    Propagate the canonname from the first record to every record
+
+    I'm not sure if this is just the behaviour of `getaddrinfo` on Linux, but
+    it seems like only the first record in the set has the canonname field
+    populated.
+    """
+    if records:
         # Apparently the canonical name is only included in the first record?
         # Add it to all of them.
-        assert(len(addrinfo[0]) == 5)
-        canonname = addrinfo[0][3]
-        addrinfo = map(lambda x: (x[0], x[1], x[2], canonname, x[4]), addrinfo)
-    return tuple(addrinfo)
+        assert(len(records[0]) == 5)
+        canonname = records[0][3]
+        addrinfo = map(lambda x: (x[0], x[1], x[2], canonname, x[4]), records)
+    return tuple(records)
 
 
 # Lifted from requests' urllib3, which in turn lifted it from `socket.py`. Oy!
@@ -46,8 +59,20 @@ def _create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
     """
 
     host, port = address
+    # We can skip asking for the canon name if we're not doing hostname-based
+    # blacklisting.
+    need_canonname = False
+    if blacklist.hostname_blacklist:
+        need_canonname = True
+        # We check both the non-canonical and canonical hostnames so we can
+        # catch both of these:
+        # CNAME from nonblacklisted.com -> blacklisted.com
+        # CNAME from blacklisted.com -> nonblacklisted.com
+        if not blacklist.is_hostname_allowed(host):
+            raise UnacceptableAddressException(host)
+
     err = None
-    addrinfo = advocate_getaddrinfo(host, port)
+    addrinfo = advocate_getaddrinfo(host, port, get_canonname=need_canonname)
     if addrinfo:
         for res in addrinfo:
             # Are we allowed to connect with this result?

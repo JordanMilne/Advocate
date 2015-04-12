@@ -6,6 +6,15 @@ from .exceptions import BlacklistException
 from .packages import ipaddress
 
 
+def canonicalize_hostname(hostname):
+    """Lowercase and punycodify a hostname"""
+    # We do the lowercasing after IDNA encoding because we only want to
+    # lowercase the *ASCII* chars.
+    # TODO: The differences between IDNA2003 and IDNA2008 might be relevant
+    # to us, but both specs are damn confusing.
+    return six.text_type(hostname.encode("idna").lower(), 'utf-8')
+
+
 class AdvocateBlacklist(object):
     _6TO4_RELAY_NET = ipaddress.ip_network("192.88.99.0/24")
 
@@ -127,11 +136,18 @@ class AdvocateBlacklist(object):
         # IDNs by default.
         if isinstance(pattern, six.string_types):
             # convert the glob to a punycode glob, then a regex
-            puny_pat = six.text_type(pattern.encode("idna").lower(), 'utf-8')
-            pattern = fnmatch.translate(puny_pat)
-        return re.match(pattern, hostname)
+            pattern = fnmatch.translate(canonicalize_hostname(pattern))
 
-    def _is_hostname_allowed(self, hostname):
+        hostname = canonicalize_hostname(hostname)
+        # Down the line the hostname may get treated as a null-terminated string
+        # (as with `socket.getaddrinfo`.) Try to account for that.
+        no_null_hostname = hostname.split("\x00")[0]
+
+        return (
+            re.match(pattern, hostname) or re.match(pattern, no_null_hostname)
+        )
+
+    def is_hostname_allowed(self, hostname):
         # Sometimes (like with "external" services that your IP has privileged
         # access to) you might not always know the IP range to blacklist access
         # to, or the `A` record might change without you noticing.
@@ -143,10 +159,6 @@ class AdvocateBlacklist(object):
         #         global_blacklist.ip_blacklist.add(ip_address(addrinfo[4][0]))
         #
         # but that's not always a good idea if they're behind a third-party lb.
-
-        # Oftentimes `AI_CANONNAME` doesn't correct the case, but will with
-        # stuff like `"LoCaLhOsT"`? Weird.
-        hostname = hostname.lower()
         for pattern in self.hostname_blacklist:
             if self._hostname_matches_pattern(hostname, pattern):
                 return False
@@ -179,7 +191,16 @@ class AdvocateBlacklist(object):
         if port in self.port_blacklist:
             return False
 
-        if not self._is_hostname_allowed(canonname):
-            return False
+        if self.hostname_blacklist:
+            if not canonname:
+                raise BlacklistException(
+                    "addrinfo must contain the canon name to do blacklisting "
+                    "based on hostname. Make sure you use the "
+                    "`socket.AI_CANONNAME` flag, and that each record contains "
+                    "the canon name. Your DNS server might also be garbage."
+                )
+
+            if not self.is_hostname_allowed(canonname):
+                return False
 
         return self.is_ip_allowed(ip)

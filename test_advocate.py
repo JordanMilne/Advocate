@@ -1,13 +1,17 @@
 # coding=utf-8
 
 from __future__ import print_function
+import socket
 
 import unittest
 
 import advocate
 from advocate import AdvocateBlacklist
 from advocate.connection import advocate_getaddrinfo
-from advocate.exceptions import UnacceptableAddressException
+from advocate.exceptions import (
+    BlacklistException,
+    UnacceptableAddressException,
+)
 from advocate.packages import ipaddress
 
 
@@ -210,7 +214,7 @@ class HostnameTests(unittest.TestCase):
     def _is_hostname_allowed(self, host, **kwargs):
         bl = permissive_blacklist(**kwargs)
         addrinfo_allowed = False
-        for res in advocate_getaddrinfo(host, 80):
+        for res in advocate_getaddrinfo(host, 80, get_canonname=True):
             if bl.is_addrinfo_allowed(res):
                 return True
         return False
@@ -242,6 +246,32 @@ class HostnameTests(unittest.TestCase):
             hostname_blacklist={u"中国.*.museum"}
         ))
 
+    def test_missing_canonname(self):
+        addrinfo = socket.getaddrinfo(
+            "127.0.0.1",
+            0,
+            0,
+            socket.SOCK_STREAM,
+        )
+        self.assertTrue(addrinfo)
+
+        # Should throw an error if we're using hostname blacklisting and the
+        # addrinfo record we passed in doesn't have a canonname
+        bl = permissive_blacklist(hostname_blacklist={"foo"})
+        self.assertRaises(
+            BlacklistException,
+            bl.is_addrinfo_allowed, addrinfo[0]
+        )
+
+    def test_embedded_null(self):
+        bl = permissive_blacklist(hostname_blacklist={"*.baz.com"})
+        # Things get a little screwy with embedded nulls. Try to emulate any
+        # possible null termination when checking if the hostname is allowed.
+        self.assertFalse(bl.is_hostname_allowed("foo.baz.com\x00.example.com"))
+        self.assertFalse(bl.is_hostname_allowed("foo.example.com\x00.baz.com"))
+        self.assertFalse(bl.is_hostname_allowed(u"foo.baz.com\x00.example.com"))
+        self.assertFalse(bl.is_hostname_allowed(u"foo.example.com\x00.baz.com"))
+
 
 class AdvocateWrapperTests(unittest.TestCase):
     def test_get(self):
@@ -260,6 +290,12 @@ class AdvocateWrapperTests(unittest.TestCase):
         self.assertRaises(
             UnacceptableAddressException,
             advocate.get, "https://localhost/"
+        )
+        self.assertRaises(
+            UnacceptableAddressException,
+            advocate.get,
+            "https://google.com/",
+            blacklist=AdvocateBlacklist(hostname_blacklist={"google.com"})
         )
 
     def test_redirect(self):
