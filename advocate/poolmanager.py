@@ -6,6 +6,11 @@ from .connectionpool import (
     BlacklistingHTTPConnectionPool,
 )
 
+POOL_CLASSES_BY_SCHEME = {
+    "http": BlacklistingHTTPConnectionPool,
+    "https": BlacklistingHTTPSConnectionPool,
+}
+
 
 def _blacklisting_new_pool(self, scheme, host, port):
     """
@@ -15,6 +20,9 @@ def _blacklisting_new_pool(self, scheme, host, port):
     by :meth:`connection_from_url` and companion methods. It is intended
     to be overridden for customization.
     """
+    # XXX: in urllib3 this uses the module-level `pool_classes_by_scheme` :(
+    # maybe submit a patch upstream to use a class attr instead so we don't
+    # have to dupe the whole method to use different connection pools?
     pool_cls = self.POOL_CLASSES_BY_SCHEME[scheme]
     kwargs = self.connection_pool_kw
     if scheme == 'http':
@@ -25,19 +33,18 @@ def _blacklisting_new_pool(self, scheme, host, port):
     return pool_cls(host, port, **kwargs)
 
 
+# Don't silently break if the private API changes across urllib3 versions
+assert(hasattr(PoolManager, '_new_pool'))
+assert(hasattr(ProxyManager, '_new_pool'))
+
+
 class BlacklistingPoolManager(PoolManager):
-    POOL_CLASSES_BY_SCHEME = {
-        "http": BlacklistingHTTPConnectionPool,
-        "https": BlacklistingHTTPSConnectionPool,
-    }
+    POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
     _new_pool = _blacklisting_new_pool
 
 
 class BlacklistingProxyPoolManager(ProxyManager):
-    POOL_CLASSES_BY_SCHEME = {
-        "http": BlacklistingHTTPConnectionPool,
-        "https": BlacklistingHTTPSConnectionPool,
-    }
+    POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
     _new_pool = _blacklisting_new_pool
 
 

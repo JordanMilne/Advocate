@@ -18,6 +18,8 @@ class BlacklistingHTTPAdapter(HTTPAdapter):
         self._pool_connections = connections
         self._pool_maxsize = maxsize
         self._pool_block = block
+        # XXX: This would be unnecessary if the parent used a class-level
+        # `PoolManagerCls` attr here. Possible patch for urllib3?
         self.poolmanager = BlacklistingPoolManager(
             num_pools=connections,
             maxsize=maxsize,

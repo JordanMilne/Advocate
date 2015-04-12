@@ -112,6 +112,11 @@ def _blacklisting_new_conn(self):
     return conn
 
 
+# Don't silently break if the private API changes across urllib3 versions
+assert(hasattr(HTTPConnection, '_new_conn'))
+assert(hasattr(HTTPSConnection, '_new_conn'))
+
+
 class BlacklistingHTTPConnection(HTTPConnection):
     _new_conn = _blacklisting_new_conn
 
