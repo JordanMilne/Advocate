@@ -4,9 +4,10 @@
 advocate.api
 ~~~~~~~~~~~~
 
-This module implements the Requests API, largely a copy/paste from requests.
+This module implements the Requests API, largely a copy/paste from `requests`
+itself.
 
-:copyright: (c) 2012 by Kenneth Reitz.
+:copyright: (c) 2015 by Jordan Milne.
 :license: Apache2, see LICENSE for more details.
 
 """

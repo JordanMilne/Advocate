@@ -1,4 +1,2 @@
 * Proper proxy support
 * Audit IPv6 support
-* Backport a newer version of ipaddress.py, version from PyPI has surprising behaviour.
-* Tests
