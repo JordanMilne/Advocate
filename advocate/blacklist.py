@@ -17,6 +17,9 @@ def canonicalize_hostname(hostname):
 
 class AdvocateBlacklist(object):
     _6TO4_RELAY_NET = ipaddress.ip_network("192.88.99.0/24")
+    # Just the well known prefix, DNS64 servers can set their own
+    # prefix, but in practice most probably don't.
+    _DNS64_WK_PREFIX = ipaddress.ip_network("64:ff9b::/96")
 
     def __init__(
             self,
@@ -27,6 +30,7 @@ class AdvocateBlacklist(object):
             allow_ipv6=False,
             allow_teredo=False,
             allow_6to4=False,
+            allow_dns64=False,
             allow_link_local=False,
             allow_loopback=False,
             allow_multicast=False,
@@ -42,6 +46,7 @@ class AdvocateBlacklist(object):
         self.allow_ipv6 = allow_ipv6
         self.allow_teredo = allow_teredo
         self.allow_6to4 = allow_6to4
+        self.allow_dns64 = allow_dns64
         self.allow_link_local = allow_link_local
         self.allow_loopback = allow_loopback
         self.allow_multicast = allow_multicast
@@ -89,6 +94,12 @@ class AdvocateBlacklist(object):
                     return False
                 # Check both the client *and* server IPs
                 v4_nested.extend(addr_ip.teredo)
+            if addr_ip in self._DNS64_WK_PREFIX:
+                if not self.allow_dns64:
+                    return False
+                # When using the well-known prefix the last 4 bytes
+                # are the IPv4 addr
+                v4_nested.append(ipaddress.ip_address(addr_ip.packed[-4:]))
 
             if not all(self.is_ip_allowed(addr_v4) for addr_v4 in v4_nested):
                 return False

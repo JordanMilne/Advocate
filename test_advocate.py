@@ -25,6 +25,7 @@ def permissive_blacklist(**kwargs):
         allow_ipv6=True,
         allow_teredo=True,
         allow_6to4=True,
+        allow_dns64=True,
         allow_link_local=True,
         allow_loopback=True,
         allow_multicast=True,
@@ -119,12 +120,12 @@ class BlackListIPTests(unittest.TestCase):
         self._test_ip_kind_blocked("2002:C0A8:FFFF::", allow_private=False)
         self._test_ip_kind_blocked("2002:C0A8:FFFF::", allow_6to4=False)
 
-    @unittest.expectedFailure
     def test_dns64(self):
         # XXX: Don't even know if this is an issue, TBH. Seems to be related
         # to DNS64/NAT64, but not a lot of easy-to-understand info:
         # https://tools.ietf.org/html/rfc6052
         self._test_ip_kind_blocked("64:ff9b::192.168.2.1", allow_private=False)
+        self._test_ip_kind_blocked("64:ff9b::192.168.2.1", allow_dns64=False)
 
     def test_link_local(self):
         # 169.254.XXX.XXX, AWS uses these for autoconfiguration
