@@ -3,7 +3,7 @@ from setuptools import setup
 import re
 
 requires = [
-    'requests>=2.0',
+    'requests <3.0, >=2.0',
     'six',
 ]
 
@@ -27,6 +27,7 @@ setup(
     license='Apache 2',
     author='Jordan Milne',
     author_email='advocate@saynotolinux.com',
+    test_suite='test_advocate',
     keywords="http requests security",
     description=('Set of tools based around the requests library for safely '
                  'making HTTP requests on behalf of a third party'),
