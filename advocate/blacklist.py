@@ -152,6 +152,9 @@ class AdvocateBlacklist(object):
         hostname = canonicalize_hostname(hostname)
         # Down the line the hostname may get treated as a null-terminated string
         # (as with `socket.getaddrinfo`.) Try to account for that.
+        #
+        #    >>> socket.getaddrinfo("example.com\x00aaaa", 80)
+        #    [(2, 1, 6, '', ('93.184.216.34', 80)), [...]
         no_null_hostname = hostname.split("\x00")[0]
 
         return (
