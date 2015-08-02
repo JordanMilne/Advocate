@@ -90,10 +90,10 @@ class BlackListIPTests(unittest.TestCase):
             for ip_idx in xrange(0, num_ips, step_size):
                 i += 1
                 bad_ip = bad_netblock[ip_idx]
-                thing = bl.is_ip_allowed(bad_ip)
-                if thing or True:
+                bad_ip_allowed = bl.is_ip_allowed(bad_ip)
+                if bad_ip_allowed:
                     print(i, bad_ip)
-                self.assertFalse(thing)
+                self.assertFalse(bad_ip_allowed)
 
     # TODO: something like the above for IPv6?
 
