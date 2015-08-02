@@ -310,5 +310,14 @@ class AdvocateWrapperTests(unittest.TestCase):
             advocate.get, redir_url
         )
 
+    def test_mount_disabled(self):
+        sess = advocate.Session()
+        self.assertRaises(
+            NotImplementedError,
+            sess.mount,
+            "foo://",
+            None,
+        )
+
 if __name__ == '__main__':
     unittest.main()

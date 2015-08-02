@@ -78,10 +78,8 @@ print sess.get("http://google.com/")
 
 ## Caveats
 
-* Be careful about mounting other adapters on the "http://" or "https://" schemes,
-you'll clobber Advocate's adapter and all the safety will be gone! For that matter,
-be careful about mounting *any* adapters on an `advocate.Session`. You'll need
-to subclass any existing adapters to get the benefit of Advocate's blacklisting.
+* `mount()`ing other adapters is disallowed to prevent Advocate's blacklisting adapters
+from being clobbered.
 
 * Advocate hasn't been tested with HTTP proxies, it's the proxy's job to do the 
 blacklisting for any requests that go through it. Any requests that bypass the

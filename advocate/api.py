@@ -11,6 +11,7 @@ itself.
 :license: Apache2, see LICENSE for more details.
 
 """
+from collections import OrderedDict
 
 import requests
 
@@ -21,10 +22,28 @@ class Session(requests.Session):
     """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
     def __init__(self, *args, **kwargs):
         self.blacklist = kwargs.pop("blacklist", None)
+
+        # `Session.__init__()` calls `mount()` internally, so we need to allow
+        # it temporarily
+        self.__mountAllowed = True
         requests.Session.__init__(self, *args, **kwargs)
+
+        # Drop any existing adapters
+        self.adapters = OrderedDict()
+
         adapter = BlacklistingHTTPAdapter(blacklist=self.blacklist)
         self.mount("http://", adapter)
         self.mount("https://", adapter)
+        self.__mountAllowed = False
+
+    def mount(self, *args, **kwargs):
+        """Wrapper around `mount()` to prevent an protection bypass"""
+        if self.__mountAllowed:
+            super(Session, self).mount(*args, **kwargs)
+        else:
+            raise NotImplementedError(
+                "mount() is disabled to prevent protection bypasses"
+            )
 
 
 def request(method, url, **kwargs):
@@ -145,7 +164,7 @@ def patch(url, data=None, **kwargs):
     :rtype: requests.Response
     """
 
-    return request('patch', url,  data=data, **kwargs)
+    return request('patch', url, data=data, **kwargs)
 
 
 def delete(url, **kwargs):
