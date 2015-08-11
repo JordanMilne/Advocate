@@ -10,6 +10,7 @@ from .api import (
     put,
     patch,
     delete,
+    AdvocateRequestsAPIWrapper,
     Session,
 )
 from .blacklist import AdvocateBlacklist

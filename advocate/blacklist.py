@@ -24,6 +24,7 @@ class AdvocateBlacklist(object):
     def __init__(
             self,
             ip_blacklist=None,
+            # TODO: IP whitelist?
             port_whitelist=None,
             port_blacklist=None,
             hostname_blacklist=None,

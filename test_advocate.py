@@ -5,8 +5,10 @@ import socket
 
 import unittest
 
+from requests.exceptions import ConnectionError
+
 import advocate
-from advocate import AdvocateBlacklist
+from advocate import AdvocateBlacklist, AdvocateRequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
     BlacklistException,
@@ -317,6 +319,34 @@ class AdvocateWrapperTests(unittest.TestCase):
             sess.mount,
             "foo://",
             None,
+        )
+
+    def test_advocate_requests_api_wrapper(self):
+        blacklist = AdvocateBlacklist(hostname_blacklist={"google.com"})
+        local_blacklist = AdvocateBlacklist(allow_loopback=True, allow_private=True)
+        wrapper = AdvocateRequestsAPIWrapper(blacklist=blacklist)
+        local_wrapper = AdvocateRequestsAPIWrapper(blacklist=local_blacklist)
+        self.assertRaises(
+            UnacceptableAddressException,
+            wrapper.get, "http://127.0.0.1:0/"
+        )
+        self.assertRaises(
+            ConnectionError,
+            local_wrapper.get, "http://127.0.0.1:0/"
+        )
+        self.assertRaises(
+            UnacceptableAddressException,
+            wrapper.get, "http://localhost:0/"
+        )
+        self.assertRaises(
+            UnacceptableAddressException,
+            wrapper.get, "https://localhost:0/"
+        )
+        self.assertRaises(
+            UnacceptableAddressException,
+            wrapper.get,
+            "https://google.com/",
+            blacklist=AdvocateBlacklist(hostname_blacklist={"google.com"})
         )
 
 if __name__ == '__main__':
