@@ -100,8 +100,9 @@ def _create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
                     sock.close()
                     sock = None
 
-        # If we got here, none of the results were acceptable
-        err = UnacceptableAddressException(address)
+        if err is None:
+            # If we got here, none of the results were acceptable
+            err = UnacceptableAddressException(address)
     if err is not None:
         raise err
     else:
