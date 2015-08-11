@@ -74,9 +74,24 @@ sess = advocate.Session()
 print sess.get("http://google.com/")
 ```
 
-**TODO**: Examples for custom blacklist rules
+If you have more nuanced rules but still want a drop-in replacement for
+`requests`, there's `AdvocateRequestsAPIWrapper`:
+
+```python
+from advocate import AdvocateBlacklist, AdvocateRequestsAPIWrapper
+from advocate.packages import ipaddress
+
+dougs_advocate = AdvocateRequestsAPIWrapper(AdvocateBlacklist(ip_blacklist={
+    # Contains data incomprehensible to mere mortals
+    ipaddress.ip_network("42.42.42.42/32")
+}))
+print dougs_advocate.get("http://42.42.42.42/")
+# ^ blocked!
+```
 
 ## Caveats
+
+* This is alpha-quality software, the API might change without warning!
 
 * `mount()`ing other adapters is disallowed to prevent Advocate's blacklisting adapters
 from being clobbered.
