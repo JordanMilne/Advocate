@@ -41,6 +41,7 @@ class AdvocateBlacklist(object):
     ):
         self.ip_blacklist = ip_blacklist or set()
         self.port_whitelist = port_whitelist or set()
+        # TODO: Blacklist all well-known ports other than 80 and 443 by default?
         self.port_blacklist = port_blacklist or set()
         self.hostname_blacklist = hostname_blacklist or set()
         self.allow_ipv6 = allow_ipv6
