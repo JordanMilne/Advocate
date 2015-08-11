@@ -96,7 +96,7 @@ print dougs_advocate.get("http://42.42.42.42/")
 * `mount()`ing other adapters is disallowed to prevent Advocate's blacklisting adapters
 from being clobbered.
 
-* Advocate does not (yet) support the user of HTTP proxies.
+* Advocate does not (yet) support the use of HTTP proxies.
 
 * Proper IPv6 support is still a WIP as noted above.
 
