@@ -81,11 +81,9 @@ print sess.get("http://google.com/")
 * `mount()`ing other adapters is disallowed to prevent Advocate's blacklisting adapters
 from being clobbered.
 
-* Advocate hasn't been tested with HTTP proxies, it's the proxy's job to do the 
-blacklisting for any requests that go through it. Any requests that bypass the
-proxy should properly handle blacklisting.
+* Advocate does not (yet) support the user of HTTP proxies.
 
-* Proper IPv6 support is still a WIP as noted above
+* Proper IPv6 support is still a WIP as noted above.
 
 ## Acknowledgements
 

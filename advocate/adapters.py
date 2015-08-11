@@ -39,18 +39,20 @@ class BlacklistingHTTPAdapter(HTTPAdapter):
         :param proxy_kwargs: Extra keyword arguments used to configure the Proxy Manager.
         :returns: ProxyManager
         """
-        if proxy not in self.proxy_manager:
-            proxy_headers = self.proxy_headers(proxy)
-            # TODO: Does this even work? We don't want to block access to the
-            # proxy itself if it's internal, but we want to use the blacklist
-            # if we bypassed the proxy for a request.
-            self.proxy_manager[proxy] = proxy_from_url(
-                proxy,
-                proxy_headers=proxy_headers,
-                num_pools=self._pool_connections,
-                maxsize=self._pool_maxsize,
-                block=self._pool_block,
-                blacklist=self._blacklist,
-                **proxy_kwargs)
-
-        return self.proxy_manager[proxy]
+        raise NotImplementedError("Proxy support not ready")
+        # TODO: Look into urllib3 internals to see what _proper_ proxy support
+        # would entail
+        # if proxy not in self.proxy_manager:
+        #     proxy_headers = self.proxy_headers(proxy)
+        #     # proxy itself if it's internal, but we want to use the blacklist
+        #     # if we bypassed the proxy for a request.
+        #     self.proxy_manager[proxy] = proxy_from_url(
+        #         proxy,
+        #         proxy_headers=proxy_headers,
+        #         num_pools=self._pool_connections,
+        #         maxsize=self._pool_maxsize,
+        #         block=self._pool_block,
+        #         blacklist=self._blacklist,
+        #         **proxy_kwargs)
+        #
+        # return self.proxy_manager[proxy]
