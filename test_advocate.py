@@ -343,9 +343,13 @@ class AdvocateWrapperTests(unittest.TestCase):
             UnacceptableAddressException,
             wrapper.get, "http://127.0.0.1:0/"
         )
-        self.assertRaises(
-            ConnectionError,
-            local_wrapper.get, "http://127.0.0.1:0/"
+
+        with self.assertRaises(Exception) as cm:
+            local_wrapper.get("http://127.0.0.1:0/")
+        # This might be either exception depending on the requests version
+        self.assertRegexpMatches(
+            cm.exception.__class__.__name__,
+            r"\A(Connection|Protocol)Error",
         )
         self.assertRaises(
             UnacceptableAddressException,

@@ -3,7 +3,7 @@ from setuptools import setup
 import re
 
 requires = [
-    'requests <3.0, >=2.0',
+    'requests <3.0, >=2.4',
     'six',
 ]
 
