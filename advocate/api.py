@@ -179,7 +179,7 @@ def delete(url, **kwargs):
     return request('delete', url, **kwargs)
 
 
-class AdvocateRequestsAPIWrapper(object):
+class RequestsAPIWrapper(object):
     """Provides a `requests.api`-like interface with a specific blacklist"""
     def __init__(self, blacklist):
         self.blacklist = blacklist

@@ -15,7 +15,7 @@ def canonicalize_hostname(hostname):
     return six.text_type(hostname.encode("idna").lower(), 'utf-8')
 
 
-class AdvocateBlacklist(object):
+class Blacklist(object):
     _6TO4_RELAY_NET = ipaddress.ip_network("192.88.99.0/24")
     # Just the well known prefix, DNS64 servers can set their own
     # prefix, but in practice most probably don't.
@@ -24,7 +24,7 @@ class AdvocateBlacklist(object):
     def __init__(
             self,
             ip_blacklist=None,
-            # TODO: IP whitelist?
+            ip_whitelist=None,
             port_whitelist=None,
             port_blacklist=None,
             hostname_blacklist=None,
@@ -32,15 +32,9 @@ class AdvocateBlacklist(object):
             allow_teredo=False,
             allow_6to4=False,
             allow_dns64=False,
-            allow_link_local=False,
-            allow_loopback=False,
-            allow_multicast=False,
-            allow_private=False,
-            allow_reserved=False,
-            allow_site_local=False,
-            allow_unspecified=False,
     ):
         self.ip_blacklist = ip_blacklist or set()
+        self.ip_whitelist = ip_whitelist or set()
         self.port_whitelist = port_whitelist or set()
         # TODO: Blacklist all well-known ports other than 80 and 443 by default?
         self.port_blacklist = port_blacklist or set()
@@ -49,21 +43,20 @@ class AdvocateBlacklist(object):
         self.allow_teredo = allow_teredo
         self.allow_6to4 = allow_6to4
         self.allow_dns64 = allow_dns64
-        self.allow_link_local = allow_link_local
-        self.allow_loopback = allow_loopback
-        self.allow_multicast = allow_multicast
-        self.allow_private = allow_private
-        self.allow_reserved = allow_reserved
-        self.allow_site_local = allow_site_local
-        self.allow_unspecified = allow_unspecified
 
     def is_ip_allowed(self, addr_ip):
         if not isinstance(addr_ip,
                           (ipaddress.IPv4Address, ipaddress.IPv6Address)):
             addr_ip = ipaddress.ip_address(addr_ip)
 
+        if any(addr_ip in net for net in self.ip_blacklist):
+            return False
+
+        if any(addr_ip in net for net in self.ip_whitelist):
+            return True
+
         if addr_ip.version == 4:
-            if not self.allow_private and not addr_ip.is_private:
+            if not addr_ip.is_private:
                 # IPs for carrier-grade NAT. Seems weird that it doesn't set
                 # `is_private`, but we need to check `not is_global`
                 if not ipaddress.ip_network(addr_ip).is_global:
@@ -80,9 +73,6 @@ class AdvocateBlacklist(object):
             v4_nested = []
             if addr_ip.ipv4_mapped:
                 v4_nested.append(addr_ip.ipv4_mapped)
-            # TODO: Doesn't look like `ipaddress` handles `64:ff9b::<ipv4>`?
-            # Should still be handled if you don't `allow_reserved`
-
             # WTF IPv6? Why you gotta have a billion tunneling mechanisms?
             # XXX: Do we even really care about these? If we're tunneling
             # through public servers we shouldn't be able to access
@@ -107,35 +97,30 @@ class AdvocateBlacklist(object):
                 return False
 
             # fec0::*, apparently deprecated?
-            if not self.allow_site_local and addr_ip.is_site_local:
+            if addr_ip.is_site_local:
                 return False
         else:
             raise BlacklistException("Unsupported IP version(?): %r" % addr_ip)
 
-        if any(addr_ip in net for net in self.ip_blacklist):
-            return False
-
         # 169.254.XXX.XXX, AWS uses these for autoconfiguration
-        if not self.allow_link_local and addr_ip.is_link_local:
+        if addr_ip.is_link_local:
             return False
         # 127.0.0.1, ::1, etc.
-        if not self.allow_loopback and addr_ip.is_loopback:
+        if addr_ip.is_loopback:
             return False
-        if not self.allow_multicast and addr_ip.is_multicast:
+        if addr_ip.is_multicast:
             return False
         # 192.168.XXX.XXX, 10.XXX.XXX.XXX
-        if not self.allow_private and addr_ip.is_private:
+        if addr_ip.is_private:
             return False
         # 255.255.255.255, ::ffff:XXXX:XXXX (v6->v4) mapping
-        if not self.allow_reserved:
-            if addr_ip.is_reserved:
-                return False
-            # There's no reason to connect directly to a 6to4 relay
-            if addr_ip in self._6TO4_RELAY_NET:
-                return False
-
+        if addr_ip.is_reserved:
+            return False
+        # There's no reason to connect directly to a 6to4 relay
+        if addr_ip in self._6TO4_RELAY_NET:
+            return False
         # 0.0.0.0
-        if not self.allow_unspecified and addr_ip.is_unspecified:
+        if addr_ip.is_unspecified:
             return False
 
         # It doesn't look bad, so... it's must be ok!

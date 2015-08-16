@@ -1,11 +1,11 @@
 from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK
 
-from .blacklist import AdvocateBlacklist
-from .poolmanager import BlacklistingPoolManager, proxy_from_url
+from .blacklist import Blacklist
+from .poolmanager import BlacklistingPoolManager
 
 
 class BlacklistingHTTPAdapter(HTTPAdapter):
-    DEFAULT_BLACKLIST = AdvocateBlacklist()
+    DEFAULT_BLACKLIST = Blacklist()
 
     def __init__(self, *args, **kwargs):
         self._blacklist = kwargs.pop('blacklist', None)

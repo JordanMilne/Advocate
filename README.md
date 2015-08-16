@@ -75,13 +75,13 @@ print sess.get("http://google.com/")
 ```
 
 If you have more nuanced rules but still want a drop-in replacement for
-`requests`, there's `AdvocateRequestsAPIWrapper`:
+`requests`, there's `RequestsAPIWrapper`:
 
 ```python
-from advocate import AdvocateBlacklist, AdvocateRequestsAPIWrapper
+from advocate import Blacklist, RequestsAPIWrapper
 from advocate.packages import ipaddress
 
-dougs_advocate = AdvocateRequestsAPIWrapper(AdvocateBlacklist(ip_blacklist={
+dougs_advocate = RequestsAPIWrapper(Blacklist(ip_blacklist={
     # Contains data incomprehensible to mere mortals
     ipaddress.ip_network("42.42.42.42/32")
 }))

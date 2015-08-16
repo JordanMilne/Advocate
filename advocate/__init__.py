@@ -10,8 +10,8 @@ from .api import (
     put,
     patch,
     delete,
-    AdvocateRequestsAPIWrapper,
+    RequestsAPIWrapper,
     Session,
 )
-from .blacklist import AdvocateBlacklist
+from .blacklist import Blacklist
 from .exceptions import UnacceptableAddressException, BlacklistException
