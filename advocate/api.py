@@ -83,12 +83,8 @@ def request(method, url, **kwargs):
     """
 
     blacklist = kwargs.pop("blacklist", None)
-    sess = Session(blacklist=blacklist)
-    response = sess.request(method=method, url=url, **kwargs)
-    # By explicitly closing the session, we avoid leaving sockets open which
-    # can trigger a ResourceWarning in some cases, and look like a memory leak
-    # in others.
-    sess.close()
+    with Session(blacklist=blacklist) as sess:
+        response = sess.request(method=method, url=url, **kwargs)
     return response
 
 
