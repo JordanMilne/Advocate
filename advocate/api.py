@@ -46,6 +46,10 @@ class Session(requests.Session):
             )
 
 
+def session(*args, **kwargs):
+    return Session(*args, **kwargs)
+
+
 def request(method, url, **kwargs):
     """Constructs and sends a :class:`Request <Request>`.
 
@@ -183,19 +187,18 @@ class RequestsAPIWrapper(object):
     """Provides a `requests.api`-like interface with a specific blacklist"""
     def __init__(self, blacklist):
         self.blacklist = blacklist
-        self.request = self._default_blacklist_wrapper(request, blacklist)
-        self.get = self._default_blacklist_wrapper(get, blacklist)
-        self.options = self._default_blacklist_wrapper(options, blacklist)
-        self.head = self._default_blacklist_wrapper(options, blacklist)
-        self.post = self._default_blacklist_wrapper(post, blacklist)
-        self.put = self._default_blacklist_wrapper(put, blacklist)
-        self.patch = self._default_blacklist_wrapper(patch, blacklist)
-        self.delete = self._default_blacklist_wrapper(delete, blacklist)
-        # TODO: replacing a class with a function call is icky, is there a
-        # better way while keeping this a mostly-dropin replacement?
-        self.Session = self._default_blacklist_wrapper(Session, blacklist)
 
-    def _default_blacklist_wrapper(self, fun, blacklist):
+        self.request = self._default_arg_wrapper(request)
+        self.get = self._default_arg_wrapper(get)
+        self.options = self._default_arg_wrapper(options)
+        self.head = self._default_arg_wrapper(options)
+        self.post = self._default_arg_wrapper(post)
+        self.put = self._default_arg_wrapper(put)
+        self.patch = self._default_arg_wrapper(patch)
+        self.delete = self._default_arg_wrapper(delete)
+        self.session = self._default_arg_wrapper(session)
+
+    def _default_arg_wrapper(self, fun):
         def wrapped_func(*args, **kwargs):
             kwargs.setdefault("blacklist", self.blacklist)
             return fun(*args, **kwargs)
