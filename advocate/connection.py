@@ -4,6 +4,7 @@ from socket import timeout as SocketTimeout
 from requests.packages.urllib3.connection import HTTPSConnection, HTTPConnection
 from requests.packages.urllib3.exceptions import ConnectTimeoutError
 from requests.packages.urllib3.util.connection import _set_socket_options
+from requests.packages.urllib3.util.connection import create_connection as old_create_connection
 
 from .exceptions import UnacceptableAddressException
 
@@ -43,7 +44,8 @@ def fix_addrinfo_canonname(records):
 
 
 # Lifted from requests' urllib3, which in turn lifted it from `socket.py`. Oy!
-def _create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
+def blacklisting_create_connection(address,
+                       timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
                        source_address=None, socket_options=None,
                        blacklist=None):
     """Connect to *address* and return the socket object.
@@ -62,7 +64,7 @@ def _create_connection(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
     # We can skip asking for the canon name if we're not doing hostname-based
     # blacklisting.
     need_canonname = False
-    if blacklist.hostname_blacklist:
+    if blacklist and blacklist.hostname_blacklist:
         need_canonname = True
         # We check both the non-canonical and canonical hostnames so we can
         # catch both of these:
@@ -116,7 +118,7 @@ def _blacklisting_new_conn(self):
 
     :return: New socket connection.
     """
-    extra_kw = {"blacklist": self._blacklist}
+    extra_kw = {}
     if self.source_address:
         extra_kw['source_address'] = self.source_address
 
@@ -124,7 +126,16 @@ def _blacklisting_new_conn(self):
         extra_kw['socket_options'] = self.socket_options
 
     try:
-        conn = _create_connection(
+        # Hack around HTTPretty's patched sockets
+        # TODO: some better method of hacking around it that checks if we
+        # _would have_ connected to a private addr?
+        conn_func = blacklisting_create_connection
+        if socket.getaddrinfo.__module__.startswith("httpretty"):
+            conn_func = old_create_connection
+        else:
+            extra_kw["blacklist"] = self._blacklist
+
+        conn = conn_func(
             (self.host, self.port),
             self.timeout,
             **extra_kw
