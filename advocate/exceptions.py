@@ -1,6 +1,10 @@
-class UnacceptableAddressException(Exception):
+class AdvocateException(Exception):
     pass
 
 
-class BlacklistException(Exception):
+class UnacceptableAddressException(AdvocateException):
+    pass
+
+
+class BlacklistException(AdvocateException):
     pass
