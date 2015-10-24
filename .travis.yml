@@ -7,7 +7,6 @@ python:
   - "3.4"
   - "3.5"
   - "pypy"
-  - "pypy3"
 env:
   - REQUESTS_PACKAGE="requests==2.8.1"
   - REQUESTS_PACKAGE="requests==2.7.0"
