@@ -5,8 +5,6 @@ import socket
 
 import unittest
 
-from requests.exceptions import ConnectionError
-
 import advocate
 from advocate import Blacklist, RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
@@ -15,6 +13,13 @@ from advocate.exceptions import (
     UnacceptableAddressException,
 )
 from advocate.packages import ipaddress
+
+
+def canonname_supported():
+    """Check if the nameserver supports the AI_CANONNAME flag"""
+    addrinfo = advocate_getaddrinfo("example.com", 0, get_canonname=True)
+    assert addrinfo
+    return addrinfo[0][3] == b"example.com"
 
 
 def permissive_blacklist(**kwargs):
@@ -224,10 +229,16 @@ class AddrInfoTests(unittest.TestCase):
         )
 
 
+@unittest.skipIf(
+    not canonname_supported(),
+    "Nameserver doesn't support AI_CANONNAME, skipping hostname tests"
+)
 class HostnameTests(unittest.TestCase):
+    def setUp(self):
+        self._canonname_supported = canonname_supported()
+
     def _is_hostname_allowed(self, host, **kwargs):
         bl = permissive_blacklist(**kwargs)
-        addrinfo_allowed = False
         for res in advocate_getaddrinfo(host, 80, get_canonname=True):
             if bl.is_addrinfo_allowed(res):
                 return True
@@ -305,6 +316,12 @@ class AdvocateWrapperTests(unittest.TestCase):
             UnacceptableAddressException,
             advocate.get, "https://localhost/"
         )
+
+    @unittest.skipIf(
+        not canonname_supported(),
+        "Nameserver doesn't support AI_CANONNAME, skipping hostname tests"
+    )
+    def test_blacklist_hostname(self):
         self.assertRaises(
             UnacceptableAddressException,
             advocate.get,
@@ -333,12 +350,10 @@ class AdvocateWrapperTests(unittest.TestCase):
         )
 
     def test_advocate_requests_api_wrapper(self):
-        blacklist = Blacklist(hostname_blacklist={"google.com"})
-        local_blacklist = Blacklist(ip_whitelist={
+        wrapper = RequestsAPIWrapper(blacklist=Blacklist())
+        local_wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
             ipaddress.ip_network("127.0.0.1"),
-        })
-        wrapper = RequestsAPIWrapper(blacklist=blacklist)
-        local_wrapper = RequestsAPIWrapper(blacklist=local_blacklist)
+        }))
         self.assertRaises(
             UnacceptableAddressException,
             wrapper.get, "http://127.0.0.1:0/"
@@ -346,6 +361,7 @@ class AdvocateWrapperTests(unittest.TestCase):
 
         with self.assertRaises(Exception) as cm:
             local_wrapper.get("http://127.0.0.1:0/")
+        # Check that we got a connection exception instead of a blacklist one
         # This might be either exception depending on the requests version
         self.assertRegexpMatches(
             cm.exception.__class__.__name__,
@@ -359,11 +375,19 @@ class AdvocateWrapperTests(unittest.TestCase):
             UnacceptableAddressException,
             wrapper.get, "https://localhost:0/"
         )
+
+    @unittest.skipIf(
+        not canonname_supported(),
+        "Nameserver doesn't support AI_CANONNAME, skipping hostname tests"
+    )
+    def test_advocate_requests_api_wrapper_hostnames(self):
+        wrapper = RequestsAPIWrapper(blacklist=Blacklist(
+            hostname_blacklist={"google.com"},
+        ))
         self.assertRaises(
             UnacceptableAddressException,
             wrapper.get,
             "https://google.com/",
-            blacklist=Blacklist(hostname_blacklist={"google.com"})
         )
 
 if __name__ == '__main__':
