@@ -1,3 +1,5 @@
+![Travis Build Status](https://travis-ci.org/JordanMilne/Advocate.svg?branch=master)
+
 # Advocate
 
 Advocate is a set of tools based around the [requests library](https://github.com/kennethreitz/requests) for safely making
