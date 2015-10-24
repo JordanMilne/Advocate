@@ -1,4 +1,4 @@
-![Travis Build Status](https://travis-ci.org/JordanMilne/Advocate.svg?branch=master)
+![Travis Build Status](https://travis-ci.org/JordanMilne/Advocate.svg?branch=master) ![CodeCov Coverage report](https://codecov.io/github/JordanMilne/Advocate/coverage.svg?branch=master)
 
 # Advocate
 
