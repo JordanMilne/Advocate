@@ -18,7 +18,7 @@ env:
 install:
   - pip install -q $REQUESTS_PACKAGE
   - python setup.py -q install
-script: nosetests
+script: nosetests --with-coverage --cover-package=advocate
 
 # Coverage metrics
 before_install:
