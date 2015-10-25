@@ -7,6 +7,7 @@ from requests.packages.urllib3.util.connection import _set_socket_options
 from requests.packages.urllib3.util.connection import create_connection as old_create_connection
 
 from .exceptions import UnacceptableAddressException
+from .packages import ipaddress
 
 
 def advocate_getaddrinfo(host, port, get_canonname=False):
@@ -21,26 +22,29 @@ def advocate_getaddrinfo(host, port, get_canonname=False):
         # All IDNs will be converted to punycode.
         socket.AI_CANONNAME if get_canonname else 0,
     )
-    if get_canonname:
-        addrinfo = fix_addrinfo_canonname(addrinfo)
-    return addrinfo
+    return fix_addrinfo(addrinfo)
 
 
-def fix_addrinfo_canonname(records):
+def fix_addrinfo(records):
     """
-    Propagate the canonname from the first record to every record
+    Propagate the canonname across records and parse IPs
 
     I'm not sure if this is just the behaviour of `getaddrinfo` on Linux, but
     it seems like only the first record in the set has the canonname field
     populated.
     """
+    def fix_record(record, canonname):
+        sa = record[4]
+        sa = (ipaddress.ip_address(sa[0]),) + sa[1:]
+        return record[0], record[1], record[2], canonname, sa
+
+    canonname = None
     if records:
         # Apparently the canonical name is only included in the first record?
         # Add it to all of them.
         assert(len(records[0]) == 5)
         canonname = records[0][3]
-        addrinfo = map(lambda x: (x[0], x[1], x[2], canonname, x[4]), records)
-    return tuple(records)
+    return tuple(fix_record(x, canonname) for x in records)
 
 
 # Lifted from requests' urllib3, which in turn lifted it from `socket.py`. Oy!
@@ -81,6 +85,8 @@ def blacklisting_create_connection(address,
             if blacklist and not blacklist.is_addrinfo_allowed(res):
                 continue
             af, socktype, proto, canonname, sa = res
+            # Unparse the validated IP
+            sa = (sa[0].exploded,) + sa[1:]
             sock = None
             try:
                 sock = socket.socket(af, socktype, proto)
