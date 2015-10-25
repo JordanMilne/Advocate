@@ -6,6 +6,7 @@ from .poolmanager import BlacklistingPoolManager
 
 class BlacklistingHTTPAdapter(HTTPAdapter):
     DEFAULT_BLACKLIST = Blacklist()
+    __attrs__ = HTTPAdapter.__attrs__ + ['_blacklist']
 
     def __init__(self, *args, **kwargs):
         self._blacklist = kwargs.pop('blacklist', None)

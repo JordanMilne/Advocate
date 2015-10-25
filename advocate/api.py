@@ -193,6 +193,7 @@ class RequestsAPIWrapper(object):
         self.patch = self._default_arg_wrapper(patch)
         self.delete = self._default_arg_wrapper(delete)
         self.session = self._default_arg_wrapper(session)
+        self.Session = self.session
 
     def _default_arg_wrapper(self, fun):
         def wrapped_func(*args, **kwargs):
