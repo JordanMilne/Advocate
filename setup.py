@@ -28,6 +28,7 @@ setup(
     version=version,
     packages=packages,
     install_requires=requires,
+    tests_require=["pytest"],
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',
     author='Jordan Milne',

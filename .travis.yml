@@ -16,7 +16,7 @@ env:
   # Latest version of requests, for good measure
   - REQUESTS_PACKAGE="requests"
 install:
-  - pip install -q $REQUESTS_PACKAGE
+  - bash install_dev_requests.sh $REQUESTS_PACKAGE
   - python setup.py -q install
 script: nosetests --with-coverage --cover-package=advocate
 
