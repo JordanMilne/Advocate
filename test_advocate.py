@@ -68,7 +68,7 @@ else:
         tests_source = tests_source.replace("pytest.mark.xfail",
                                             "unittest.skip")
         # Use our hooked methods instead
-        methods_re = "|".join(("get", "post", "delete", "delete", "options",
+        methods_re = "|".join(("get", "post", "delete", "patch", "options",
                                "put", "head", "session", "Session", "request"))
         tests_source = re.sub(r"(?<=\b)requests\.(" + methods_re + r")(?=\b)",
                               r"advocate_wrapper.\1",
