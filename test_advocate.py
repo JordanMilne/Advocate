@@ -1,15 +1,16 @@
 # coding=utf-8
 
 from __future__ import print_function, division
-import functools
 
+import functools
 import os.path as path
 import re
 import socket
 import sys
+import unittest
 from codecs import open
 
-import unittest
+import requests
 
 import advocate
 from advocate import Blacklist, RequestsAPIWrapper
@@ -35,9 +36,34 @@ def allow_mount_failure(func):
             raise
     return wrapper
 
+
+def checked_send_wrapper(func):
+    """Make sure send() was not issued on a base requests.Session
+
+    This helps us ensure that all imported tests from requests are actually
+    calling into our wrapper.
+    """
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not isinstance(self, advocate.Session):
+            raise Exception("Calling send() on an unwrapped Session, test "
+                            "translator may be broken!")
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+requests.Session.send = checked_send_wrapper(requests.Session.send)
+
+
 # Make sure we didn't break requests' base functionality, include its tests
 # TODO: Make this less gross :(
-import requests
+advocate_wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+    # requests needs to be able to hit these for its tests!
+    ipaddress.ip_network("127.0.0.1"),
+    ipaddress.ip_network("127.0.1.1"),
+    ipaddress.ip_network("10.255.255.1"),
+}))
+
 requests_dir = path.dirname(requests.__file__)
 tests_path = path.join(path.dirname(requests_dir), "test_requests.py")
 if not path.exists(tests_path):
@@ -78,14 +104,6 @@ else:
                               "\\1@allow_mount_failure\n\\1",
                               tests_source,
                               flags=re.M)
-        tests_source = """
-advocate_wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
-    # requests needs to be able to hit these for its tests!
-    ipaddress.ip_network("127.0.0.1"),
-    ipaddress.ip_network("127.0.1.1"),
-    ipaddress.ip_network("10.255.255.1"),
-}))
-""" + tests_source
         exec(tests_source.encode("utf-8"))
 
         # These tests just don't seem to work under nose + unittest
