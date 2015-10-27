@@ -4,6 +4,7 @@ from __future__ import print_function, division
 
 import functools
 import os.path as path
+import pickle
 import re
 import socket
 import sys
@@ -472,6 +473,47 @@ class AdvocateWrapperTests(unittest.TestCase):
         self.assertRaises(
             UnacceptableAddressException,
             wrapper.get, "https://localhost:0/"
+        )
+
+    def test_wrapper_session_pickle(self):
+        # Make sure the blacklist still works after a pickle round-trip
+        wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+            ipaddress.ip_network("127.0.0.1"),
+        }))
+        sess_instance = pickle.loads(pickle.dumps(wrapper.Session()))
+
+        with self.assertRaises(Exception) as cm:
+            sess_instance.get("http://127.0.0.1:0/")
+        self.assertRegexpMatches(
+            cm.exception.__class__.__name__,
+            r"\A(Connection|Protocol)Error",
+        )
+        self.assertRaises(
+            UnacceptableAddressException,
+            sess_instance.get, "http://127.0.1.1:0/"
+        )
+
+    def test_wrapper_session_subclass(self):
+        # Make sure pickle doesn't explode if we try to pickle a subclass
+        # of `wrapper.Session`
+        wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+            ipaddress.ip_network("127.0.0.1"),
+        }))
+
+        class _SessionThing(wrapper.Session):
+            pass
+
+        sess_instance = pickle.loads(pickle.dumps(_SessionThing()))
+
+        with self.assertRaises(Exception) as cm:
+            sess_instance.get("http://127.0.0.1:0/")
+        self.assertRegexpMatches(
+            cm.exception.__class__.__name__,
+            r"\A(Connection|Protocol)Error",
+        )
+        self.assertRaises(
+            UnacceptableAddressException,
+            sess_instance.get, "http://127.0.1.1:0/"
         )
 
     @unittest.skipIf(

@@ -19,6 +19,8 @@ from .adapters import BlacklistingHTTPAdapter
 
 
 class Session(requests.Session):
+    __attrs__ = requests.Session.__attrs__ + ["blacklist"]
+
     """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
     def __init__(self, *args, **kwargs):
         self.blacklist = kwargs.pop("blacklist", None)
@@ -183,6 +185,20 @@ class RequestsAPIWrapper(object):
     """Provides a `requests.api`-like interface with a specific blacklist"""
     def __init__(self, blacklist):
         self.blacklist = blacklist
+        outer_self = self
+
+        class _WrappedSession(Session):
+            """An `advocate.Session` that uses the wrapper's blacklist
+
+            the wrapper is meant to be a transparent replacement for `requests`,
+            so people should be able to subclass `wrapper.Session` and still
+            get the desired blacklisting behaviour
+            """
+            def __new__(cls, *args, **kwargs):
+                kwargs.setdefault("blacklist", outer_self.blacklist)
+                # Dynamically created classes like this are a pain to pickle,
+                # instantiate a base `Session` instead.
+                return Session(*args, **kwargs)
 
         self.request = self._default_arg_wrapper(request)
         self.get = self._default_arg_wrapper(get)
@@ -193,7 +209,7 @@ class RequestsAPIWrapper(object):
         self.patch = self._default_arg_wrapper(patch)
         self.delete = self._default_arg_wrapper(delete)
         self.session = self._default_arg_wrapper(session)
-        self.Session = self.session
+        self.Session = _WrappedSession
 
     def _default_arg_wrapper(self, fun):
         def wrapped_func(*args, **kwargs):
