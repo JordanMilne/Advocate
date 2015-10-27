@@ -14,4 +14,4 @@ from .api import (
     Session,
 )
 from .blacklist import Blacklist
-from .exceptions import UnacceptableAddressException, BlacklistException
+from .exceptions import UnacceptableAddressException

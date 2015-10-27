@@ -17,7 +17,7 @@ import advocate
 from advocate import Blacklist, RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
-    BlacklistException,
+    NameserverException,
     UnacceptableAddressException,
 )
 from advocate.packages import ipaddress
@@ -383,7 +383,7 @@ class HostnameTests(unittest.TestCase):
         # addrinfo record we passed in doesn't have a canonname
         bl = permissive_blacklist(hostname_blacklist={"foo"})
         self.assertRaises(
-            BlacklistException,
+            NameserverException,
             bl.is_addrinfo_allowed, addrinfo[0]
         )
 

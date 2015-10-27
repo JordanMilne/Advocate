@@ -2,7 +2,7 @@ import fnmatch
 import re
 import six
 
-from .exceptions import BlacklistException
+from .exceptions import NameserverException
 from .packages import ipaddress
 
 
@@ -100,7 +100,7 @@ class Blacklist(object):
             if addr_ip.is_site_local:
                 return False
         else:
-            raise BlacklistException("Unsupported IP version(?): %r" % addr_ip)
+            raise ValueError("Unsupported IP version(?): %r" % addr_ip)
 
         # 169.254.XXX.XXX, AWS uses these for autoconfiguration
         if addr_ip.is_link_local:
@@ -182,7 +182,7 @@ class Blacklist(object):
             # the `is_<x>` properties.
             ip, port, flow_info, scope_id = sockaddr
         else:
-            raise BlacklistException("Unexpected addrinfo format %r" % sockaddr)
+            raise ValueError("Unexpected addrinfo format %r" % sockaddr)
 
         # Probably won't help protect against SSRF, but might prevent our being
         # used to attack others' non-HTTP services. See
@@ -194,7 +194,7 @@ class Blacklist(object):
 
         if self.hostname_blacklist:
             if not canonname:
-                raise BlacklistException(
+                raise NameserverException(
                     "addrinfo must contain the canon name to do blacklisting "
                     "based on hostname. Make sure you use the "
                     "`socket.AI_CANONNAME` flag, and that each record contains "

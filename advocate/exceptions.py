@@ -6,5 +6,5 @@ class UnacceptableAddressException(AdvocateException):
     pass
 
 
-class BlacklistException(AdvocateException):
+class NameserverException(AdvocateException):
     pass
