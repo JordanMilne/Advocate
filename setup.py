@@ -1,8 +1,11 @@
 import re
 
-
 from codecs import open
-from setuptools import setup
+
+try:
+    from setuptools import setup
+except ImportError:
+    from distutils.core import setup
 
 requires = [
     'requests <3.0, >=2.4',
@@ -37,12 +40,12 @@ setup(
     author='Jordan Milne',
     author_email='advocate@saynotolinux.com',
     test_suite='test_advocate',
-    keywords="http requests security ssrf proxy rebinding",
-    description=('A set of tools based around the requests library for safely '
+    keywords="http requests security ssrf proxy rebinding advocate",
+    description=('A wrapper around the requests library for safely '
                  'making HTTP requests on behalf of a third party'),
     long_description=readme,
-    classifiers=(
-        'Development Status :: 3 - Alpha',
+    classifiers=[
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'License :: OSI Approved :: Apache Software License',
@@ -50,6 +53,8 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5'
-    ),
+        'Programming Language :: Python :: 3.5',
+        'Topic :: Security',
+        'Topic :: Internet :: WWW/HTTP',
+    ],
 )
