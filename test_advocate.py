@@ -17,6 +17,7 @@ import advocate
 from advocate import Blacklist, RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
+    MountDisabledException,
     NameserverException,
     UnacceptableAddressException,
 )
@@ -24,17 +25,17 @@ from advocate.packages import ipaddress
 
 
 def allow_mount_failure(func):
-    """Pass any tests that failed due to mount() not being allowed"""
+    """Pass any tests that failed due to mount() not being allowed
+
+    Advocate isn't supposed to allow mounting, it doesn't make sense to test!
+    """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             func(*args, **kwargs)
-        except NotImplementedError as e:
-            # TODO: Probably a sign this needs a more specific exception :/
-            if "mount()" in str(e):
-                print("Skipping test that uses mount()", file=sys.stderr)
-                return
-            raise
+        except MountDisabledException:
+            print("Skipping test that uses mount()", file=sys.stderr)
+            return
     return wrapper
 
 
@@ -65,6 +66,7 @@ advocate_wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
     ipaddress.ip_network("10.255.255.1"),
 }))
 
+# We want the tests for the version of requests we're currently using
 requests_dir = path.dirname(requests.__file__)
 tests_path = path.join(path.dirname(requests_dir), "test_requests.py")
 if not path.exists(tests_path):
@@ -74,17 +76,17 @@ else:
 
     with open(tests_path, "r", "utf-8") as f:
         tests_source = f.read()
-        # These can't be imported now
+        # These have to be imported at the top of the file, too late!
         tests_source = re.sub(r"from __future__.*$", "", tests_source,
                               flags=re.M)
-        # We have this in our own file!
+        # We have our own at the bottom of this file.
         tests_source = re.sub(r'^if __name__ == "__main__".*', "", tests_source,
                               flags=re.M | re.S)
-        # Replace references so they're to files we _do_ have
+        # Replace filename references so they're to files we _do_ have
         tests_source = tests_source.replace("requirements.txt", "README.rst")
         tests_source = tests_source.replace("test_requests.py",
                                             "test_advocate.py")
-        # This actually _does_ exist now, though wasn't not supposed to.
+        # This domain _does_ resolve now, though it wasn't supposed to.
         tests_source = tests_source.replace("fooobarbangbazbing.httpbin.org",
                                             "fooobarbangbazbing.example.org")
         # This needs a timeout or it'll spin forever!
@@ -94,13 +96,13 @@ else:
         # these tests seem to be broken.
         tests_source = tests_source.replace("pytest.mark.xfail",
                                             "unittest.skip")
-        # Use our hooked methods instead
+        # Use our hooked methods instead of requests'
         methods_re = "|".join(("get", "post", "delete", "patch", "options",
                                "put", "head", "session", "Session", "request"))
         tests_source = re.sub(r"(?<=\b)requests\.(" + methods_re + r")(?=\b)",
                               r"advocate_wrapper.\1",
                               tests_source)
-        # Don't barf on mount() failures
+        # Don't barf on mount() failures, we don't allow `mount()`ing
         tests_source = re.sub(r"^(\s+)(?=def test_)",
                               "\\1@allow_mount_failure\n\\1",
                               tests_source,
@@ -115,7 +117,11 @@ else:
 
 
 def canonname_supported():
-    """Check if the nameserver supports the AI_CANONNAME flag"""
+    """Check if the nameserver supports the AI_CANONNAME flag
+
+    travis-ci.org's Python 3 env doesn't seem to support it, so don't try
+    any of the test that rely on it.
+    """
     addrinfo = advocate_getaddrinfo("example.com", 0, get_canonname=True)
     assert addrinfo
     return addrinfo[0][3] == b"example.com"
@@ -273,6 +279,16 @@ class BlackListIPTests(unittest.TestCase):
 
     def test_unspecified(self):
         self._test_ip_kind_blocked("0.0.0.0")
+
+    def test_parsed(self):
+        blacklist = permissive_blacklist()
+        self.assertFalse(blacklist.is_ip_allowed(
+            ipaddress.ip_address("0.0.0.0")
+        ))
+        self.assertTrue(blacklist.is_ip_allowed(
+            ipaddress.ip_address("144.1.1.1")
+        ))
+
 
 
 class AddrInfoTests(unittest.TestCase):
@@ -442,7 +458,7 @@ class AdvocateWrapperTests(unittest.TestCase):
     def test_mount_disabled(self):
         sess = advocate.Session()
         self.assertRaises(
-            NotImplementedError,
+            MountDisabledException,
             sess.mount,
             "foo://",
             None,

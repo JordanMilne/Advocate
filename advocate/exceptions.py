@@ -8,3 +8,7 @@ class UnacceptableAddressException(AdvocateException):
 
 class NameserverException(AdvocateException):
     pass
+
+
+class MountDisabledException(AdvocateException):
+    pass

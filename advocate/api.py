@@ -16,6 +16,7 @@ from collections import OrderedDict
 import requests
 
 from .adapters import BlacklistingHTTPAdapter
+from .exceptions import MountDisabledException
 
 
 class Session(requests.Session):
@@ -43,7 +44,7 @@ class Session(requests.Session):
         if self.__mountAllowed:
             super(Session, self).mount(*args, **kwargs)
         else:
-            raise NotImplementedError(
+            raise MountDisabledException(
                 "mount() is disabled to prevent protection bypasses"
             )
 
