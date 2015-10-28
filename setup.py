@@ -7,6 +7,9 @@ from setuptools import setup
 requires = [
     'requests <3.0, >=2.4',
     'six',
+    "pyasn1",
+    "pyopenssl",
+    "ndg-httpsclient",
 ]
 
 packages = [

@@ -17,6 +17,9 @@ env:
   - REQUESTS_PACKAGE="requests"
 install:
   - bash install_dev_requests.sh $REQUESTS_PACKAGE
+  # travis-ci.org only has PyPy 2.5, which chokes on newer cryptography
+  # versions. Look into upgrading PyPy instead.
+  - pip install 'cryptography<1.0'
   - python setup.py -q install
 script: nosetests --with-coverage --cover-package=advocate
 
