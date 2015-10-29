@@ -8,8 +8,29 @@ import pickle
 import re
 import socket
 import sys
+import traceback
 import unittest
 from codecs import open
+
+
+# This needs to be done before third-party imports to make sure they all use
+# our wrapped socket class, especially in case of subclasses.
+class _DisallowedConnectException(Exception):
+    pass
+
+
+class _WrappedSocket(socket.socket):
+    def connect(self, *args, **kwargs):
+        CONNECT_ALLOWED_FUNCS = {"blacklisting_create_connection"}
+        stack_names = (x[2] for x in traceback.extract_stack())
+        if not any(name in CONNECT_ALLOWED_FUNCS for name in stack_names):
+            raise _DisallowedConnectException("calling socket.connect() "
+                                              "unsafely!")
+        return super(_WrappedSocket, self).connect(*args, **kwargs)
+
+
+socket.socket = _WrappedSocket
+
 
 import requests
 
@@ -37,24 +58,6 @@ def allow_mount_failure(func):
             print("Skipping test that uses mount()", file=sys.stderr)
             return
     return wrapper
-
-
-def checked_send_wrapper(func):
-    """Make sure send() was not issued on a base requests.Session
-
-    This helps us ensure that all imported tests from requests are actually
-    calling into our wrapper.
-    """
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if not isinstance(self, advocate.Session):
-            raise Exception("Calling send() on an unwrapped Session, test "
-                            "translator may be broken!")
-        return func(self, *args, **kwargs)
-    return wrapper
-
-
-requests.Session.send = checked_send_wrapper(requests.Session.send)
 
 
 # Make sure we didn't break requests' base functionality, include its tests
@@ -141,6 +144,15 @@ def permissive_blacklist(**kwargs):
     )
     default_options.update(**kwargs)
     return Blacklist(**default_options)
+
+
+# Test our test wrappers to make sure they're testy
+class TestWrapperTests(unittest.TestCase):
+    def test_unsafe_connect_raises(self):
+        self.assertRaises(
+            _DisallowedConnectException,
+            requests.get, "http://example.org/"
+        )
 
 
 class BlackListIPTests(unittest.TestCase):
@@ -288,7 +300,6 @@ class BlackListIPTests(unittest.TestCase):
         self.assertTrue(blacklist.is_ip_allowed(
             ipaddress.ip_address("144.1.1.1")
         ))
-
 
 
 class AddrInfoTests(unittest.TestCase):
