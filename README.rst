@@ -69,15 +69,7 @@ Most of the other SSRF-prevention libs cover this, but I've seen a lot
 of sample code online that doesn't. Advocate will catch it since it inspects
 *every* connection attempt the underlying HTTP lib makes. 
 
-It understands IPv6
--------------------
 
-Admittedly, Advocates IPv6 support is still a work-in-progress, since I'm not
-that familiar with the spec, and there are so many ways to tunnel IPv4 over IPv6,
-as well as other things we'd rather avoid. IPv6 records are ignored by default
-for now, but you can enable them with :python:`allow_ipv6=True`.
-
-If you can think of any improvements to the IPv6 handling, please submit an issue or PR!
 
 Examples
 ========
@@ -115,10 +107,29 @@ requests, there's :python:`RequestsAPIWrapper` :
     print dougs_advocate.get("http://42.42.42.42/")
     # ^ blocked!
 
+
+TODO
+====
+
+Proper IPv6 Support?
+--------------------
+
+Advocate's IPv6 support is still a work-in-progress, since I'm not
+that familiar with the spec, and there are so many ways to tunnel IPv4 over IPv6,
+as well as other things we'd rather avoid. IPv6 records are ignored by default
+for now, but you can enable them with :python:`allow_ipv6=True`.
+
+It should mostly work as expected, but Advocate's approach might not even make sense with
+most IPv6 deployments, see `Issue #3 <https://github.com/JordanMilne/Advocate/issues/3>`_ for
+more info.
+
+If you can think of any improvements to the IPv6 handling, please submit an issue or PR!
+
+
 Caveats
 =======
 
-* This is alpha-quality software, the API might change without warning!
+* This is beta-quality software, the API might change without warning!
 * :python:`mount()` ing other adapters is disallowed to prevent Advocate's blacklisting adapters from being clobbered.
 * Advocate does not (yet) support the use of HTTP proxies.
 * Proper IPv6 support is still a WIP as noted above.
