@@ -38,6 +38,9 @@ class Blacklist(object):
         self.port_whitelist = port_whitelist or set()
         # TODO: Blacklist all well-known ports other than 80 and 443 by default?
         self.port_blacklist = port_blacklist or set()
+        # TODO: ATM this can contain either regexes or globs that are converted
+        # to regexes upon every check. Create a collection that automagically
+        # converts them to regexes on insert?
         self.hostname_blacklist = hostname_blacklist or set()
         self.allow_ipv6 = allow_ipv6
         self.allow_teredo = allow_teredo
@@ -144,9 +147,8 @@ class Blacklist(object):
         #    [(2, 1, 6, '', ('93.184.216.34', 80)), [...]
         no_null_hostname = hostname.split("\x00")[0]
 
-        return (
-            re.match(pattern, hostname) or re.match(pattern, no_null_hostname)
-        )
+        return any(re.match(pattern, x.strip(".")) for x
+                   in (no_null_hostname, hostname))
 
     def is_hostname_allowed(self, hostname):
         # Sometimes (like with "external" services that your IP has privileged
