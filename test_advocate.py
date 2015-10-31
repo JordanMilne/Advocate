@@ -482,11 +482,11 @@ class AdvocateWrapperTests(unittest.TestCase):
         }))
         self.assertRaises(
             UnacceptableAddressException,
-            wrapper.get, "http://127.0.0.1:0/"
+            wrapper.get, "http://127.0.0.1:1/"
         )
 
         with self.assertRaises(Exception) as cm:
-            local_wrapper.get("http://127.0.0.1:0/")
+            local_wrapper.get("http://127.0.0.1:1/")
         # Check that we got a connection exception instead of a blacklist one
         # This might be either exception depending on the requests version
         self.assertRegexpMatches(
@@ -495,11 +495,11 @@ class AdvocateWrapperTests(unittest.TestCase):
         )
         self.assertRaises(
             UnacceptableAddressException,
-            wrapper.get, "http://localhost:0/"
+            wrapper.get, "http://localhost:1/"
         )
         self.assertRaises(
             UnacceptableAddressException,
-            wrapper.get, "https://localhost:0/"
+            wrapper.get, "https://localhost:1/"
         )
 
     def test_wrapper_session_pickle(self):
@@ -510,14 +510,14 @@ class AdvocateWrapperTests(unittest.TestCase):
         sess_instance = pickle.loads(pickle.dumps(wrapper.Session()))
 
         with self.assertRaises(Exception) as cm:
-            sess_instance.get("http://127.0.0.1:0/")
+            sess_instance.get("http://127.0.0.1:1/")
         self.assertRegexpMatches(
             cm.exception.__class__.__name__,
             r"\A(Connection|Protocol)Error",
         )
         self.assertRaises(
             UnacceptableAddressException,
-            sess_instance.get, "http://127.0.1.1:0/"
+            sess_instance.get, "http://127.0.1.1:1/"
         )
 
     def test_wrapper_session_subclass(self):
@@ -533,14 +533,14 @@ class AdvocateWrapperTests(unittest.TestCase):
         sess_instance = pickle.loads(pickle.dumps(_SessionThing()))
 
         with self.assertRaises(Exception) as cm:
-            sess_instance.get("http://127.0.0.1:0/")
+            sess_instance.get("http://127.0.0.1:1/")
         self.assertRegexpMatches(
             cm.exception.__class__.__name__,
             r"\A(Connection|Protocol)Error",
         )
         self.assertRaises(
             UnacceptableAddressException,
-            sess_instance.get, "http://127.0.1.1:0/"
+            sess_instance.get, "http://127.0.1.1:1/"
         )
 
     @unittest.skipIf(
