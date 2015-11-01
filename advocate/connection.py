@@ -6,6 +6,7 @@ from requests.packages.urllib3.exceptions import ConnectTimeoutError
 from requests.packages.urllib3.util.connection import _set_socket_options
 from requests.packages.urllib3.util.connection import create_connection as old_create_connection
 
+from .blacklist import determine_local_addresses
 from .exceptions import UnacceptableAddressException
 from .packages import ipaddress
 
@@ -68,7 +69,7 @@ def blacklisting_create_connection(address,
     # We can skip asking for the canon name if we're not doing hostname-based
     # blacklisting.
     need_canonname = False
-    if blacklist and blacklist.hostname_blacklist:
+    if blacklist.hostname_blacklist:
         need_canonname = True
         # We check both the non-canonical and canonical hostnames so we can
         # catch both of these:
@@ -80,9 +81,16 @@ def blacklisting_create_connection(address,
     err = None
     addrinfo = advocate_getaddrinfo(host, port, get_canonname=need_canonname)
     if addrinfo:
+        if blacklist.autodetect_local_addresses:
+            local_addresses = determine_local_addresses()
+        else:
+            local_addresses = []
         for res in addrinfo:
             # Are we allowed to connect with this result?
-            if blacklist and not blacklist.is_addrinfo_allowed(res):
+            if not blacklist.is_addrinfo_allowed(
+                res,
+                _local_addresses=local_addresses,
+            ):
                 continue
             af, socktype, proto, canonname, sa = res
             # Unparse the validated IP

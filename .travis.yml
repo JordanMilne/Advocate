@@ -16,6 +16,7 @@ env:
   # Latest version of requests, for good measure
   - REQUESTS_PACKAGE="requests"
 install:
+  - bash install_complex_deps.sh
   - bash install_dev_requests.sh $REQUESTS_PACKAGE
   # travis-ci.org only has PyPy 2.5, which chokes on newer cryptography
   # versions. Look into upgrading PyPy instead.

@@ -1,6 +1,9 @@
+import functools
 import fnmatch
 import re
 import six
+
+import netifaces
 
 from .exceptions import NameserverException
 from .packages import ipaddress
@@ -13,6 +16,39 @@ def canonicalize_hostname(hostname):
     # TODO: The differences between IDNA2003 and IDNA2008 might be relevant
     # to us, but both specs are damn confusing.
     return six.text_type(hostname.encode("idna").lower(), 'utf-8')
+
+
+def determine_local_addresses():
+    """Get all IPs that refer to this machine according to netifaces"""
+    ips = []
+    for interface in netifaces.interfaces():
+        if_families = netifaces.ifaddresses(interface)
+        for family_kind in {netifaces.AF_INET, netifaces.AF_INET6}:
+            addrs = if_families.get(family_kind, [])
+            for addr in (x.get("addr", "") for x in addrs):
+                if family_kind == netifaces.AF_INET6:
+                    # We can't do anything sensible with the scope here
+                    addr = addr.split("%")[0]
+                ips.append(ipaddress.ip_network(addr))
+    return ips
+
+
+def add_local_address_arg(func):
+    """Add the "_local_addresses" kwarg if it's missing
+
+    IMO this information shouldn't be cached between calls (what if one of the
+    adapters got a new IP at runtime?,) and we don't want each function to
+    recalculate it. Just recalculate it if the caller didn't provide it for us.
+    """
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if "_local_addresses" not in kwargs:
+            if self.autodetect_local_addresses:
+                kwargs["_local_addresses"] = determine_local_addresses()
+            else:
+                kwargs["_local_addresses"] = []
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 class Blacklist(object):
@@ -32,6 +68,7 @@ class Blacklist(object):
             allow_teredo=False,
             allow_6to4=False,
             allow_dns64=False,
+            autodetect_local_addresses=True,
     ):
         self.ip_blacklist = ip_blacklist or set()
         self.ip_whitelist = ip_whitelist or set()
@@ -46,8 +83,10 @@ class Blacklist(object):
         self.allow_teredo = allow_teredo
         self.allow_6to4 = allow_6to4
         self.allow_dns64 = allow_dns64
+        self.autodetect_local_addresses = autodetect_local_addresses
 
-    def is_ip_allowed(self, addr_ip):
+    @add_local_address_arg
+    def is_ip_allowed(self, addr_ip, _local_addresses=None):
         if not isinstance(addr_ip,
                           (ipaddress.IPv4Address, ipaddress.IPv6Address)):
             addr_ip = ipaddress.ip_address(addr_ip)
@@ -57,6 +96,9 @@ class Blacklist(object):
 
         if any(addr_ip in net for net in self.ip_whitelist):
             return True
+
+        if any(addr_ip in net for net in _local_addresses):
+            return False
 
         if addr_ip.version == 4:
             if not addr_ip.is_private:
@@ -167,7 +209,8 @@ class Blacklist(object):
                 return False
         return True
 
-    def is_addrinfo_allowed(self, addrinfo):
+    @add_local_address_arg
+    def is_addrinfo_allowed(self, addrinfo, _local_addresses=None):
         assert(len(addrinfo) == 5)
         # XXX: Do we care about any of the other elements? Guessing not.
         family, socktype, proto, canonname, sockaddr = addrinfo
@@ -206,4 +249,4 @@ class Blacklist(object):
             if not self.is_hostname_allowed(canonname):
                 return False
 
-        return self.is_ip_allowed(ip)
+        return self.is_ip_allowed(ip, _local_addresses=_local_addresses)

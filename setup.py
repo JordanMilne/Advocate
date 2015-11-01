@@ -13,6 +13,7 @@ requires = [
     "pyasn1",
     "pyopenssl",
     "ndg-httpsclient",
+    'netifaces>=0.10',
 ]
 
 packages = [
@@ -34,7 +35,7 @@ setup(
     version=version,
     packages=packages,
     install_requires=requires,
-    tests_require=["pytest"],
+    tests_require=["pytest", "mock"],
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',
     author='Jordan Milne',

@@ -32,6 +32,7 @@ class _WrappedSocket(socket.socket):
 socket.socket = _WrappedSocket
 
 
+from mock import patch
 import requests
 
 import advocate
@@ -141,6 +142,7 @@ def permissive_blacklist(**kwargs):
         allow_teredo=True,
         allow_6to4=True,
         allow_dns64=True,
+        autodetect_local_addresses=False,
     )
     default_options.update(**kwargs)
     return Blacklist(**default_options)
@@ -353,6 +355,28 @@ class AddrInfoTests(unittest.TestCase):
         self.assertTrue(
             self._is_addrinfo_allowed("200.1.1.1", 99, port_blacklist=bl)
         )
+
+    @patch("advocate.blacklist.determine_local_addresses")
+    def test_local_address_handling(self, mock_determine_local_addresses):
+        fake_addresses = [ipaddress.ip_network("200.1.1.1")]
+        mock_determine_local_addresses.return_value = fake_addresses
+
+        self.assertFalse(self._is_addrinfo_allowed(
+            "200.1.1.1",
+            80,
+            autodetect_local_addresses=True
+        ))
+        # Check that `is_ip_allowed` didn't make its own call to determine
+        # local addresses
+        mock_determine_local_addresses.assert_called_once_with()
+        mock_determine_local_addresses.reset_mock()
+
+        self.assertTrue(self._is_addrinfo_allowed(
+            "200.1.1.1",
+            80,
+            autodetect_local_addresses=False,
+        ))
+        mock_determine_local_addresses.assert_not_called()
 
 
 @unittest.skipIf(
