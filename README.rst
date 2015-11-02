@@ -23,7 +23,53 @@ Installation
     pip install advocate
 
 Advocate is officially supported on CPython 2.7+, CPython 3.4+ and PyPy 2. PyPy 3 may work as well, but 
-you'll need a copy of the ipaddress module from elsewhere. 
+you'll need a copy of the ipaddress module from elsewhere. Python 3 users may also need to install netifaces
+from their `HG repository <https://bitbucket.org/al45tair/netifaces/>`_, as the version currently on PyPi won't install.
+
+
+Examples
+========
+
+Advocate is more-or-less a drop-in replacement for requests. In most cases you can just replace "requests" with
+"advocate" where necessary and be good to go:
+
+.. code-block:: python
+
+    >>> import advocate
+    >>> print advocate.get("http://google.com/")
+    <Response [200]>
+
+Advocate also provides a subclassed :python:`requests.Session` with sane defaults for
+blacklisting already set up:
+
+.. code-block:: python
+
+    >>> import advocate
+    >>> sess = advocate.Session()
+    >>> print sess.get("http://google.com/")
+    <Response [200]>
+    >>> print sess.get("http://localhost/")
+    advocate.exceptions.UnacceptableAddressException: ('localhost', 80)
+
+If you have more nuanced rules, but still want a drop-in replacement for
+requests, there's :python:`RequestsAPIWrapper` :
+
+.. code-block:: python
+
+    >>> from advocate import Blacklist, RequestsAPIWrapper
+    >>> from advocate.packages import ipaddress
+    >>> dougs_advocate = RequestsAPIWrapper(Blacklist(ip_blacklist={
+    ...     # Contains data incomprehensible to mere mortals
+    ...     ipaddress.ip_network("42.42.42.42/32")
+    ... }))
+    >>> print dougs_advocate.get("http://42.42.42.42/")
+    advocate.exceptions.UnacceptableAddressException: ('42.42.42.42', 80)
+
+
+Other than that, you can do just about everything with Advocate that you can
+with an unwrapped requests. Advocate passes requests' test suite with the
+exception of tests that require :python:`Session.mount()`.
+
 
 This seems like it's been done before
 =====================================
@@ -68,44 +114,6 @@ It handles redirects sanely
 Most of the other SSRF-prevention libs cover this, but I've seen a lot
 of sample code online that doesn't. Advocate will catch it since it inspects
 *every* connection attempt the underlying HTTP lib makes. 
-
-
-
-Examples
-========
-
-
-Advocate is more-or-less a drop-in replacement for requests. In most cases you can just replace requests with
-advocate where necessary and be good to go:
-
-.. code-block:: python
-
-    import advocate
-    print advocate.get("http://google.com/")
-
-Advocate also provides a subclassed :python:`requests.Session` with sane defaults for 
-blacklisting already set up:
-
-.. code-block:: python
-
-    import advocate
-    sess = advocate.Session()
-    print sess.get("http://google.com/")
-
-If you have more nuanced rules but still want a drop-in replacement for
-requests, there's :python:`RequestsAPIWrapper` :
-
-.. code-block:: python
-
-    from advocate import Blacklist, RequestsAPIWrapper
-    from advocate.packages import ipaddress
-    
-    dougs_advocate = RequestsAPIWrapper(Blacklist(ip_blacklist={
-        # Contains data incomprehensible to mere mortals
-        ipaddress.ip_network("42.42.42.42/32")
-    }))
-    print dougs_advocate.get("http://42.42.42.42/")
-    # ^ blocked!
 
 
 TODO
