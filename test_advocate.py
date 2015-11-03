@@ -21,7 +21,7 @@ class _DisallowedConnectException(Exception):
 
 class _WrappedSocket(socket.socket):
     def connect(self, *args, **kwargs):
-        CONNECT_ALLOWED_FUNCS = {"blacklisting_create_connection"}
+        CONNECT_ALLOWED_FUNCS = {"validating_create_connection"}
         stack_names = (x[2] for x in traceback.extract_stack())
         if not any(name in CONNECT_ALLOWED_FUNCS for name in stack_names):
             raise _DisallowedConnectException("calling socket.connect() "
@@ -36,7 +36,7 @@ from mock import patch
 import requests
 
 import advocate
-from advocate import Blacklist, RequestsAPIWrapper
+from advocate import AddrValidator, RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
     MountDisabledException,
@@ -63,7 +63,7 @@ def allow_mount_failure(func):
 
 # Make sure we didn't break requests' base functionality, include its tests
 # TODO: Make this less gross :(
-advocate_wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+advocate_wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
     # requests needs to be able to hit these for its tests!
     ipaddress.ip_network("127.0.0.1"),
     ipaddress.ip_network("127.0.1.1"),
@@ -131,8 +131,7 @@ def canonname_supported():
     return addrinfo[0][3] == b"example.com"
 
 
-def permissive_blacklist(**kwargs):
-    """Create a Blacklist that allows everything by default"""
+def permissive_validator(**kwargs):
     default_options = dict(
         ip_blacklist=None,
         port_whitelist=None,
@@ -145,7 +144,7 @@ def permissive_blacklist(**kwargs):
         autodetect_local_addresses=False,
     )
     default_options.update(**kwargs)
-    return Blacklist(**default_options)
+    return AddrValidator(**default_options)
 
 
 # Test our test wrappers to make sure they're testy
@@ -157,14 +156,14 @@ class TestWrapperTests(unittest.TestCase):
         )
 
 
-class BlackListIPTests(unittest.TestCase):
+class ValidateIPTests(unittest.TestCase):
     def _test_ip_kind_blocked(self, ip, **kwargs):
-        bl = permissive_blacklist(**kwargs)
-        self.assertFalse(bl.is_ip_allowed(ip))
+        validator = permissive_validator(**kwargs)
+        self.assertFalse(validator.is_ip_allowed(ip))
 
     def test_manual_ip_blacklist(self):
         """Test manually blacklisting based on IP"""
-        bl = Blacklist(
+        validator = AddrValidator(
             allow_ipv6=True,
             ip_blacklist=(
                 ipaddress.ip_network("132.0.5.0/24"),
@@ -172,25 +171,25 @@ class BlackListIPTests(unittest.TestCase):
                 ipaddress.ip_network("::1"),
             ),
         )
-        self.assertFalse(bl.is_ip_allowed("132.0.5.1"))
-        self.assertFalse(bl.is_ip_allowed("152.254.90.1"))
-        self.assertTrue(bl.is_ip_allowed("178.254.90.1"))
-        self.assertFalse(bl.is_ip_allowed("::1"))
+        self.assertFalse(validator.is_ip_allowed("132.0.5.1"))
+        self.assertFalse(validator.is_ip_allowed("152.254.90.1"))
+        self.assertTrue(validator.is_ip_allowed("178.254.90.1"))
+        self.assertFalse(validator.is_ip_allowed("::1"))
         # Google, found via `dig google.com AAAA`
-        self.assertTrue(bl.is_ip_allowed("2607:f8b0:400a:807::200e"))
+        self.assertTrue(validator.is_ip_allowed("2607:f8b0:400a:807::200e"))
 
     def test_ip_whitelist(self):
         """Test manually whitelisting based on IP"""
-        bl = Blacklist(
+        validator = AddrValidator(
             ip_whitelist=(
                 ipaddress.ip_network("127.0.0.1"),
             ),
         )
-        self.assertTrue(bl.is_ip_allowed("127.0.0.1"))
+        self.assertTrue(validator.is_ip_allowed("127.0.0.1"))
 
     def test_ip_whitelist_blacklist_conflict(self):
         """Manual blacklist should take precendence over manual whitelist"""
-        bl = Blacklist(
+        validator = AddrValidator(
             ip_whitelist=(
                 ipaddress.ip_network("127.0.0.1"),
             ),
@@ -198,7 +197,7 @@ class BlackListIPTests(unittest.TestCase):
                 ipaddress.ip_network("127.0.0.1"),
             ),
         )
-        self.assertFalse(bl.is_ip_allowed("127.0.0.1"))
+        self.assertFalse(validator.is_ip_allowed("127.0.0.1"))
 
     @unittest.skip("takes half an hour or so to run")
     def test_safecurl_blacklist(self):
@@ -222,7 +221,7 @@ class BlackListIPTests(unittest.TestCase):
             '240.0.0.0/4'
         ))
         i = 0
-        bl = Blacklist()
+        validator = AddrValidator()
         for bad_netblock in bad_netblocks:
             num_ips = bad_netblock.num_addresses
             # Don't test *every* IP in large netblocks
@@ -230,7 +229,7 @@ class BlackListIPTests(unittest.TestCase):
             for ip_idx in xrange(0, num_ips, step_size):
                 i += 1
                 bad_ip = bad_netblock[ip_idx]
-                bad_ip_allowed = bl.is_ip_allowed(bad_ip)
+                bad_ip_allowed = validator.is_ip_allowed(bad_ip)
                 if bad_ip_allowed:
                     print(i, bad_ip)
                 self.assertFalse(bad_ip_allowed)
@@ -295,21 +294,21 @@ class BlackListIPTests(unittest.TestCase):
         self._test_ip_kind_blocked("0.0.0.0")
 
     def test_parsed(self):
-        blacklist = permissive_blacklist()
-        self.assertFalse(blacklist.is_ip_allowed(
+        validator = permissive_validator()
+        self.assertFalse(validator.is_ip_allowed(
             ipaddress.ip_address("0.0.0.0")
         ))
-        self.assertTrue(blacklist.is_ip_allowed(
+        self.assertTrue(validator.is_ip_allowed(
             ipaddress.ip_address("144.1.1.1")
         ))
 
 
 class AddrInfoTests(unittest.TestCase):
     def _is_addrinfo_allowed(self, host, port, **kwargs):
-        bl = permissive_blacklist(**kwargs)
+        validator = permissive_validator(**kwargs)
         allowed = False
         for res in advocate_getaddrinfo(host, port):
-            if bl.is_addrinfo_allowed(res):
+            if validator.is_addrinfo_allowed(res):
                 allowed = True
         return allowed
 
@@ -321,16 +320,16 @@ class AddrInfoTests(unittest.TestCase):
     def test_malformed_addrinfo(self):
         # Alright, the addrinfo format is probably never going to change,
         # but *what if it did?*
-        bl = permissive_blacklist()
+        vl = permissive_validator()
         addrinfo = advocate_getaddrinfo("example.com", 80)[0] + (1,)
-        self.assertRaises(Exception, lambda: bl.is_addrinfo_allowed(addrinfo))
+        self.assertRaises(Exception, lambda: vl.is_addrinfo_allowed(addrinfo))
 
     def test_unexpected_proto(self):
         # What if addrinfo returns info about a protocol we don't understand?
-        bl = permissive_blacklist()
+        vl = permissive_validator()
         addrinfo = list(advocate_getaddrinfo("example.com", 80)[0])
         addrinfo[4] = addrinfo[4] + (1,)
-        self.assertRaises(Exception, lambda: bl.is_addrinfo_allowed(addrinfo))
+        self.assertRaises(Exception, lambda: vl.is_addrinfo_allowed(addrinfo))
 
     def test_port_whitelist(self):
         wl = (80, 10)
@@ -356,7 +355,7 @@ class AddrInfoTests(unittest.TestCase):
             self._is_addrinfo_allowed("200.1.1.1", 99, port_blacklist=bl)
         )
 
-    @patch("advocate.blacklist.determine_local_addresses")
+    @patch("advocate.addrvalidator.determine_local_addresses")
     def test_local_address_handling(self, mock_determine_local_addresses):
         fake_addresses = [ipaddress.ip_network("200.1.1.1")]
         mock_determine_local_addresses.return_value = fake_addresses
@@ -388,9 +387,9 @@ class HostnameTests(unittest.TestCase):
         self._canonname_supported = canonname_supported()
 
     def _is_hostname_allowed(self, host, **kwargs):
-        bl = permissive_blacklist(**kwargs)
+        validator = permissive_validator(**kwargs)
         for res in advocate_getaddrinfo(host, 80, get_canonname=True):
-            if bl.is_addrinfo_allowed(res):
+            if validator.is_addrinfo_allowed(res):
                 return True
         return False
 
@@ -432,20 +431,20 @@ class HostnameTests(unittest.TestCase):
 
         # Should throw an error if we're using hostname blacklisting and the
         # addrinfo record we passed in doesn't have a canonname
-        bl = permissive_blacklist(hostname_blacklist={"foo"})
+        validator = permissive_validator(hostname_blacklist={"foo"})
         self.assertRaises(
             NameserverException,
-            bl.is_addrinfo_allowed, addrinfo[0]
+            validator.is_addrinfo_allowed, addrinfo[0]
         )
 
     def test_embedded_null(self):
-        bl = permissive_blacklist(hostname_blacklist={"*.baz.com"})
+        vl = permissive_validator(hostname_blacklist={"*.baz.com"})
         # Things get a little screwy with embedded nulls. Try to emulate any
         # possible null termination when checking if the hostname is allowed.
-        self.assertFalse(bl.is_hostname_allowed("foo.baz.com\x00.example.com"))
-        self.assertFalse(bl.is_hostname_allowed("foo.example.com\x00.baz.com"))
-        self.assertFalse(bl.is_hostname_allowed(u"foo.baz.com\x00.example.com"))
-        self.assertFalse(bl.is_hostname_allowed(u"foo.example.com\x00.baz.com"))
+        self.assertFalse(vl.is_hostname_allowed("foo.baz.com\x00.example.com"))
+        self.assertFalse(vl.is_hostname_allowed("foo.example.com\x00.baz.com"))
+        self.assertFalse(vl.is_hostname_allowed(u"foo.baz.com\x00.example.com"))
+        self.assertFalse(vl.is_hostname_allowed(u"foo.example.com\x00.baz.com"))
 
 
 class AdvocateWrapperTests(unittest.TestCase):
@@ -453,7 +452,7 @@ class AdvocateWrapperTests(unittest.TestCase):
         self.assertEqual(advocate.get("http://example.com").status_code, 200)
         self.assertEqual(advocate.get("https://example.com").status_code, 200)
 
-    def test_blacklist(self):
+    def test_validator(self):
         self.assertRaises(
             UnacceptableAddressException,
             advocate.get, "http://127.0.0.1/"
@@ -476,7 +475,7 @@ class AdvocateWrapperTests(unittest.TestCase):
             UnacceptableAddressException,
             advocate.get,
             "https://google.com/",
-            blacklist=Blacklist(hostname_blacklist={"google.com"})
+            validator=AddrValidator(hostname_blacklist={"google.com"})
         )
 
     def test_redirect(self):
@@ -500,10 +499,12 @@ class AdvocateWrapperTests(unittest.TestCase):
         )
 
     def test_advocate_requests_api_wrapper(self):
-        wrapper = RequestsAPIWrapper(blacklist=Blacklist())
-        local_wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+        wrapper = RequestsAPIWrapper(validator=AddrValidator())
+        local_validator = AddrValidator(ip_whitelist={
             ipaddress.ip_network("127.0.0.1"),
-        }))
+        })
+        local_wrapper = RequestsAPIWrapper(validator=local_validator)
+
         self.assertRaises(
             UnacceptableAddressException,
             wrapper.get, "http://127.0.0.1:1/"
@@ -511,7 +512,7 @@ class AdvocateWrapperTests(unittest.TestCase):
 
         with self.assertRaises(Exception) as cm:
             local_wrapper.get("http://127.0.0.1:1/")
-        # Check that we got a connection exception instead of a blacklist one
+        # Check that we got a connection exception instead of a validation one
         # This might be either exception depending on the requests version
         self.assertRegexpMatches(
             cm.exception.__class__.__name__,
@@ -527,8 +528,8 @@ class AdvocateWrapperTests(unittest.TestCase):
         )
 
     def test_wrapper_session_pickle(self):
-        # Make sure the blacklist still works after a pickle round-trip
-        wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+        # Make sure the validator still works after a pickle round-trip
+        wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
             ipaddress.ip_network("127.0.0.1"),
         }))
         sess_instance = pickle.loads(pickle.dumps(wrapper.Session()))
@@ -547,7 +548,7 @@ class AdvocateWrapperTests(unittest.TestCase):
     def test_wrapper_session_subclass(self):
         # Make sure pickle doesn't explode if we try to pickle a subclass
         # of `wrapper.Session`
-        wrapper = RequestsAPIWrapper(blacklist=Blacklist(ip_whitelist={
+        wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
             ipaddress.ip_network("127.0.0.1"),
         }))
 
@@ -572,7 +573,7 @@ class AdvocateWrapperTests(unittest.TestCase):
         "Nameserver doesn't support AI_CANONNAME, skipping hostname tests"
     )
     def test_advocate_requests_api_wrapper_hostnames(self):
-        wrapper = RequestsAPIWrapper(blacklist=Blacklist(
+        wrapper = RequestsAPIWrapper(validator=AddrValidator(
             hostname_blacklist={"google.com"},
         ))
         self.assertRaises(
@@ -583,7 +584,7 @@ class AdvocateWrapperTests(unittest.TestCase):
 
     def test_wrapper_getattr_fallback(self):
         # Make sure wrappers include everything in Advocate's `__init__.py`
-        wrapper = RequestsAPIWrapper(Blacklist())
+        wrapper = RequestsAPIWrapper(AddrValidator())
         self.assertIsNotNone(wrapper.PreparedRequest)
 
 if __name__ == '__main__':

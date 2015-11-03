@@ -40,7 +40,7 @@ Advocate is more-or-less a drop-in replacement for requests. In most cases you c
     <Response [200]>
 
 Advocate also provides a subclassed :python:`requests.Session` with sane defaults for
-blacklisting already set up:
+validation already set up:
 
 .. code-block:: python
 
@@ -51,25 +51,25 @@ blacklisting already set up:
     >>> print sess.get("http://localhost/")
     advocate.exceptions.UnacceptableAddressException: ('localhost', 80)
 
-All of the wrapped request functions accept a :python:`blacklist` kwarg where you
-can set additional filter rules:
+All of the wrapped request functions accept a :python:`validator` kwarg where you
+can set additional rules:
 
 .. code-block:: python
 
     >>> import advocate
-    >>> blacklist = advocate.Blacklist(hostname_blacklist={"*.museum",})
-    >>> print advocate.get("http://educational.MUSEUM/", blacklist=blacklist)
+    >>> validator = advocate.AddrValidator(hostname_blacklist={"*.museum",})
+    >>> print advocate.get("http://educational.MUSEUM/", validator=validator)
     advocate.exceptions.UnacceptableAddressException: educational.MUSEUM
 
 If you require more advanced rules than the defaults, but don't want to have to pass
-the blacklist kwarg everywhere, there's :python:`RequestsAPIWrapper` . You can
+the validator kwarg everywhere, there's :python:`RequestsAPIWrapper` . You can
 define a wrapper in a common file and import it instead of advocate:
 
 .. code-block:: python
 
-    >>> from advocate import Blacklist, RequestsAPIWrapper
+    >>> from advocate import AddrValidator, RequestsAPIWrapper
     >>> from advocate.packages import ipaddress
-    >>> dougs_advocate = RequestsAPIWrapper(Blacklist(ip_blacklist={
+    >>> dougs_advocate = RequestsAPIWrapper(AddrValidator(ip_blacklist={
     ...     # Contains data incomprehensible to mere mortals
     ...     ipaddress.ip_network("42.42.42.42/32")
     ... }))
@@ -136,7 +136,7 @@ Proper IPv6 Support?
 Advocate's IPv6 support is still a work-in-progress, since I'm not
 that familiar with the spec, and there are so many ways to tunnel IPv4 over IPv6,
 as well as other non-obvious gotchas. IPv6 records are ignored by default
-for now, but you can enable by using a :python:`Blacklist` with :python:`allow_ipv6=True`.
+for now, but you can enable by using an :python:`AddrValidator` with :python:`allow_ipv6=True`.
 
 It should mostly work as expected, but Advocate's approach might not even make sense with
 most IPv6 deployments, see `Issue #3 <https://github.com/JordanMilne/Advocate/issues/3>`_ for
@@ -149,7 +149,7 @@ Caveats
 =======
 
 * This is beta-quality software, the API might change without warning!
-* :python:`mount()` ing other adapters is disallowed to prevent Advocate's blacklisting adapters from being clobbered.
+* :python:`mount()` ing other adapters is disallowed to prevent Advocate's validating adapters from being clobbered.
 * Advocate does not, and might never support the use of HTTP proxies.
 * Proper IPv6 support is still a WIP as noted above.
 

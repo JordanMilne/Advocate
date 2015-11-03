@@ -2,17 +2,17 @@ from requests.packages.urllib3 import ProxyManager, PoolManager
 from requests.packages.urllib3.poolmanager import SSL_KEYWORDS
 
 from .connectionpool import (
-    BlacklistingHTTPSConnectionPool,
-    BlacklistingHTTPConnectionPool,
+    ValidatingHTTPSConnectionPool,
+    ValidatingHTTPConnectionPool,
 )
 
 POOL_CLASSES_BY_SCHEME = {
-    "http": BlacklistingHTTPConnectionPool,
-    "https": BlacklistingHTTPSConnectionPool,
+    "http": ValidatingHTTPConnectionPool,
+    "https": ValidatingHTTPSConnectionPool,
 }
 
 
-def _blacklisting_new_pool(self, scheme, host, port):
+def _validating_new_pool(self, scheme, host, port):
     """
     Create a new :class:`ConnectionPool` based on host, port and scheme.
 
@@ -38,15 +38,15 @@ assert(hasattr(PoolManager, '_new_pool'))
 assert(hasattr(ProxyManager, '_new_pool'))
 
 
-class BlacklistingPoolManager(PoolManager):
+class ValidatingPoolManager(PoolManager):
     POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
-    _new_pool = _blacklisting_new_pool
+    _new_pool = _validating_new_pool
 
 
-class BlacklistingProxyPoolManager(ProxyManager):
+class ValidatingProxyPoolManager(ProxyManager):
     POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
-    _new_pool = _blacklisting_new_pool
+    _new_pool = _validating_new_pool
 
 
 def proxy_from_url(url, **kw):
-    return BlacklistingProxyPoolManager(proxy_url=url, **kw)
+    return ValidatingProxyPoolManager(proxy_url=url, **kw)

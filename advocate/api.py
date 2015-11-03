@@ -16,16 +16,16 @@ from collections import OrderedDict
 import requests
 
 import advocate
-from .adapters import BlacklistingHTTPAdapter
+from .adapters import ValidatingHTTPAdapter
 from .exceptions import MountDisabledException
 
 
 class Session(requests.Session):
-    __attrs__ = requests.Session.__attrs__ + ["blacklist"]
+    __attrs__ = requests.Session.__attrs__ + ["validator"]
 
     """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
     def __init__(self, *args, **kwargs):
-        self.blacklist = kwargs.pop("blacklist", None)
+        self.validator = kwargs.pop("validator", None)
 
         # `Session.__init__()` calls `mount()` internally, so we need to allow
         # it temporarily
@@ -35,7 +35,7 @@ class Session(requests.Session):
         # Drop any existing adapters
         self.adapters = OrderedDict()
 
-        adapter = BlacklistingHTTPAdapter(blacklist=self.blacklist)
+        adapter = ValidatingHTTPAdapter(validator=self.validator)
         self.mount("http://", adapter)
         self.mount("https://", adapter)
         self.__mountAllowed = False
@@ -86,8 +86,8 @@ def request(method, url, **kwargs):
       <Response [200]>
     """
 
-    blacklist = kwargs.pop("blacklist", None)
-    with Session(blacklist=blacklist) as sess:
+    validator = kwargs.pop("validator", None)
+    with Session(validator=validator) as sess:
         response = sess.request(method=method, url=url, **kwargs)
     return response
 
@@ -184,9 +184,9 @@ def delete(url, **kwargs):
 
 
 class RequestsAPIWrapper(object):
-    """Provides a `requests.api`-like interface with a specific blacklist"""
-    def __init__(self, blacklist):
-        self.blacklist = blacklist
+    """Provides a `requests.api`-like interface with a specific validator"""
+    def __init__(self, validator):
+        self.validator = validator
         outer_self = self
 
         class _WrappedSession(Session):
@@ -194,10 +194,10 @@ class RequestsAPIWrapper(object):
 
             the wrapper is meant to be a transparent replacement for `requests`,
             so people should be able to subclass `wrapper.Session` and still
-            get the desired blacklisting behaviour
+            get the desired validation behaviour
             """
             def __new__(cls, *args, **kwargs):
-                kwargs.setdefault("blacklist", outer_self.blacklist)
+                kwargs.setdefault("validator", outer_self.validator)
                 # Dynamically created classes like this are a pain to pickle,
                 # instantiate a base `Session` instead.
                 return Session(*args, **kwargs)
@@ -224,6 +224,6 @@ class RequestsAPIWrapper(object):
 
     def _default_arg_wrapper(self, fun):
         def wrapped_func(*args, **kwargs):
-            kwargs.setdefault("blacklist", self.blacklist)
+            kwargs.setdefault("validator", self.validator)
             return fun(*args, **kwargs)
         return wrapped_func

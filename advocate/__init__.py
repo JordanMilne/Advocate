@@ -8,7 +8,7 @@ from requests.exceptions import (
     TooManyRedirects, HTTPError, ConnectionError
 )
 
-from .adapters import BlacklistingHTTPAdapter
+from .adapters import ValidatingHTTPAdapter
 from .api import (
     request,
     get,
@@ -21,5 +21,5 @@ from .api import (
     RequestsAPIWrapper,
     Session,
 )
-from .blacklist import Blacklist
+from .addrvalidator import AddrValidator
 from .exceptions import UnacceptableAddressException

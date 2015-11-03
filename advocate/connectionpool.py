@@ -1,8 +1,8 @@
 from requests.packages.urllib3 import HTTPConnectionPool, HTTPSConnectionPool
 
 from .connection import (
-    BlacklistingHTTPConnection,
-    BlacklistingHTTPSConnection,
+    ValidatingHTTPConnection,
+    ValidatingHTTPSConnection,
 )
 
 # Don't silently break if the private API changes across urllib3 versions
@@ -12,11 +12,11 @@ assert(hasattr(HTTPConnectionPool, 'scheme'))
 assert(hasattr(HTTPSConnectionPool, 'scheme'))
 
 
-class BlacklistingHTTPConnectionPool(HTTPConnectionPool):
+class ValidatingHTTPConnectionPool(HTTPConnectionPool):
     scheme = 'http'
-    ConnectionCls = BlacklistingHTTPConnection
+    ConnectionCls = ValidatingHTTPConnection
 
 
-class BlacklistingHTTPSConnectionPool(HTTPSConnectionPool):
+class ValidatingHTTPSConnectionPool(HTTPSConnectionPool):
     scheme = 'https'
-    ConnectionCls = BlacklistingHTTPSConnection
+    ConnectionCls = ValidatingHTTPSConnection

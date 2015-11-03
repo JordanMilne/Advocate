@@ -1,18 +1,17 @@
 from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK
 
-from .blacklist import Blacklist
-from .poolmanager import BlacklistingPoolManager
+from .addrvalidator import AddrValidator
+from .poolmanager import ValidatingPoolManager
 
 
-class BlacklistingHTTPAdapter(HTTPAdapter):
-    DEFAULT_BLACKLIST = Blacklist()
-    __attrs__ = HTTPAdapter.__attrs__ + ['_blacklist']
+class ValidatingHTTPAdapter(HTTPAdapter):
+    __attrs__ = HTTPAdapter.__attrs__ + ['_validator']
 
     def __init__(self, *args, **kwargs):
-        self._blacklist = kwargs.pop('blacklist', None)
-        if not self._blacklist:
-            self._blacklist = self.DEFAULT_BLACKLIST
-        super(BlacklistingHTTPAdapter, self).__init__(*args, **kwargs)
+        self._validator = kwargs.pop('validator', None)
+        if not self._validator:
+            self._validator = AddrValidator()
+        super(ValidatingHTTPAdapter, self).__init__(*args, **kwargs)
 
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK,
                          **pool_kwargs):
@@ -21,11 +20,11 @@ class BlacklistingHTTPAdapter(HTTPAdapter):
         self._pool_block = block
         # XXX: This would be unnecessary if the parent used a class-level
         # `PoolManagerCls` attr here. Possible patch for urllib3?
-        self.poolmanager = BlacklistingPoolManager(
+        self.poolmanager = ValidatingPoolManager(
             num_pools=connections,
             maxsize=maxsize,
             block=block,
-            blacklist=self._blacklist,
+            validator=self._validator,
             **pool_kwargs
         )
 
@@ -45,7 +44,7 @@ class BlacklistingHTTPAdapter(HTTPAdapter):
         # would entail
         # if proxy not in self.proxy_manager:
         #     proxy_headers = self.proxy_headers(proxy)
-        #     # proxy itself if it's internal, but we want to use the blacklist
+        #     # proxy itself if it's internal, but we want to use the validator
         #     # if we bypassed the proxy for a request.
         #     self.proxy_manager[proxy] = proxy_from_url(
         #         proxy,
@@ -53,7 +52,7 @@ class BlacklistingHTTPAdapter(HTTPAdapter):
         #         num_pools=self._pool_connections,
         #         maxsize=self._pool_maxsize,
         #         block=self._pool_block,
-        #         blacklist=self._blacklist,
+        #         validator=self._validator,
         #         **proxy_kwargs)
         #
         # return self.proxy_manager[proxy]

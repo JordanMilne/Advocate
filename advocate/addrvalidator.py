@@ -51,7 +51,7 @@ def add_local_address_arg(func):
     return wrapper
 
 
-class Blacklist(object):
+class AddrValidator(object):
     _6TO4_RELAY_NET = ipaddress.ip_network("192.88.99.0/24")
     # Just the well known prefix, DNS64 servers can set their own
     # prefix, but in practice most probably don't.
@@ -201,7 +201,7 @@ class Blacklist(object):
         # Another option is doing something like:
         #
         #     for addrinfo in socket.getaddrinfo("foocorp.external.org", 80):
-        #         global_blacklist.ip_blacklist.add(ip_address(addrinfo[4][0]))
+        #         global_validator.ip_blacklist.add(ip_address(addrinfo[4][0]))
         #
         # but that's not always a good idea if they're behind a third-party lb.
         for pattern in self.hostname_blacklist:

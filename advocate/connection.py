@@ -6,7 +6,7 @@ from requests.packages.urllib3.exceptions import ConnectTimeoutError
 from requests.packages.urllib3.util.connection import _set_socket_options
 from requests.packages.urllib3.util.connection import create_connection as old_create_connection
 
-from .blacklist import determine_local_addresses
+from .addrvalidator import determine_local_addresses
 from .exceptions import UnacceptableAddressException
 from .packages import ipaddress
 
@@ -49,10 +49,10 @@ def fix_addrinfo(records):
 
 
 # Lifted from requests' urllib3, which in turn lifted it from `socket.py`. Oy!
-def blacklisting_create_connection(address,
+def validating_create_connection(address,
                        timeout=socket._GLOBAL_DEFAULT_TIMEOUT,
                        source_address=None, socket_options=None,
-                       blacklist=None):
+                       validator=None):
     """Connect to *address* and return the socket object.
 
     Convenience function.  Connect to *address* (a 2-tuple ``(host,
@@ -69,25 +69,25 @@ def blacklisting_create_connection(address,
     # We can skip asking for the canon name if we're not doing hostname-based
     # blacklisting.
     need_canonname = False
-    if blacklist.hostname_blacklist:
+    if validator.hostname_blacklist:
         need_canonname = True
         # We check both the non-canonical and canonical hostnames so we can
         # catch both of these:
         # CNAME from nonblacklisted.com -> blacklisted.com
         # CNAME from blacklisted.com -> nonblacklisted.com
-        if not blacklist.is_hostname_allowed(host):
+        if not validator.is_hostname_allowed(host):
             raise UnacceptableAddressException(host)
 
     err = None
     addrinfo = advocate_getaddrinfo(host, port, get_canonname=need_canonname)
     if addrinfo:
-        if blacklist.autodetect_local_addresses:
+        if validator.autodetect_local_addresses:
             local_addresses = determine_local_addresses()
         else:
             local_addresses = []
         for res in addrinfo:
             # Are we allowed to connect with this result?
-            if not blacklist.is_addrinfo_allowed(
+            if not validator.is_addrinfo_allowed(
                 res,
                 _local_addresses=local_addresses,
             ):
@@ -127,7 +127,7 @@ def blacklisting_create_connection(address,
 
 # TODO: Is there a better way to add this to multiple classes with different
 # base classes? I tried a mixin, but it used the base method instead.
-def _blacklisting_new_conn(self):
+def _validating_new_conn(self):
     """ Establish a socket connection and set nodelay settings on it.
 
     :return: New socket connection.
@@ -143,11 +143,11 @@ def _blacklisting_new_conn(self):
         # Hack around HTTPretty's patched sockets
         # TODO: some better method of hacking around it that checks if we
         # _would have_ connected to a private addr?
-        conn_func = blacklisting_create_connection
+        conn_func = validating_create_connection
         if socket.getaddrinfo.__module__.startswith("httpretty"):
             conn_func = old_create_connection
         else:
-            extra_kw["blacklist"] = self._blacklist
+            extra_kw["validator"] = self._validator
 
         conn = conn_func(
             (self.host, self.port),
@@ -168,17 +168,17 @@ assert(hasattr(HTTPConnection, '_new_conn'))
 assert(hasattr(HTTPSConnection, '_new_conn'))
 
 
-class BlacklistingHTTPConnection(HTTPConnection):
-    _new_conn = _blacklisting_new_conn
+class ValidatingHTTPConnection(HTTPConnection):
+    _new_conn = _validating_new_conn
 
     def __init__(self, *args, **kwargs):
-        self._blacklist = kwargs.pop("blacklist")
+        self._validator = kwargs.pop("validator")
         HTTPConnection.__init__(self, *args, **kwargs)
 
 
-class BlacklistingHTTPSConnection(HTTPSConnection):
-    _new_conn = _blacklisting_new_conn
+class ValidatingHTTPSConnection(HTTPSConnection):
+    _new_conn = _validating_new_conn
 
     def __init__(self, *args, **kwargs):
-        self._blacklist = kwargs.pop("blacklist")
+        self._validator = kwargs.pop("validator")
         HTTPSConnection.__init__(self, *args, **kwargs)
