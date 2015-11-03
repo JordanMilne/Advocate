@@ -15,6 +15,7 @@ from collections import OrderedDict
 
 import requests
 
+import advocate
 from .adapters import BlacklistingHTTPAdapter
 from .exceptions import MountDisabledException
 
@@ -211,6 +212,15 @@ class RequestsAPIWrapper(object):
         self.delete = self._default_arg_wrapper(delete)
         self.session = self._default_arg_wrapper(session)
         self.Session = _WrappedSession
+
+    def __getattr__(self, item):
+        # This class is meant to mimic the requests base module, so if we don't
+        # have this attribute, it might be on the base module (like the Request
+        # class, etc.)
+        try:
+            return object.__getattribute__(self, item)
+        except AttributeError:
+            return getattr(advocate, item)
 
     def _default_arg_wrapper(self, fun):
         def wrapped_func(*args, **kwargs):

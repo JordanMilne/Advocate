@@ -581,5 +581,10 @@ class AdvocateWrapperTests(unittest.TestCase):
             "https://google.com/",
         )
 
+    def test_wrapper_getattr_fallback(self):
+        # Make sure wrappers include everything in Advocate's `__init__.py`
+        wrapper = RequestsAPIWrapper(Blacklist())
+        self.assertIsNotNone(wrapper.PreparedRequest)
+
 if __name__ == '__main__':
     unittest.main()
