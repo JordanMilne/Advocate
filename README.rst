@@ -51,8 +51,19 @@ blacklisting already set up:
     >>> print sess.get("http://localhost/")
     advocate.exceptions.UnacceptableAddressException: ('localhost', 80)
 
-If you have more nuanced rules, but still want a drop-in replacement for
-requests, there's :python:`RequestsAPIWrapper` :
+All of the wrapped request functions accept a :python:`blacklist` kwarg where you
+can set additional filter rules:
+
+.. code-block:: python
+
+    >>> import advocate
+    >>> blacklist = advocate.Blacklist(hostname_blacklist={"*.museum",})
+    >>> print advocate.get("http://educational.MUSEUM/", blacklist=blacklist)
+    advocate.exceptions.UnacceptableAddressException: educational.MUSEUM
+
+If you require more advanced rules than the defaults, but don't want to have to pass
+the blacklist kwarg everywhere, there's :python:`RequestsAPIWrapper` . You can
+define a wrapper in a common file and import it instead of advocate:
 
 .. code-block:: python
 
@@ -124,8 +135,8 @@ Proper IPv6 Support?
 
 Advocate's IPv6 support is still a work-in-progress, since I'm not
 that familiar with the spec, and there are so many ways to tunnel IPv4 over IPv6,
-as well as other things we'd rather avoid. IPv6 records are ignored by default
-for now, but you can enable them with :python:`allow_ipv6=True`.
+as well as other non-obvious gotchas. IPv6 records are ignored by default
+for now, but you can enable by using a :python:`Blacklist` with :python:`allow_ipv6=True`.
 
 It should mostly work as expected, but Advocate's approach might not even make sense with
 most IPv6 deployments, see `Issue #3 <https://github.com/JordanMilne/Advocate/issues/3>`_ for
@@ -139,7 +150,7 @@ Caveats
 
 * This is beta-quality software, the API might change without warning!
 * :python:`mount()` ing other adapters is disallowed to prevent Advocate's blacklisting adapters from being clobbered.
-* Advocate does not (yet) support the use of HTTP proxies.
+* Advocate does not, and might never support the use of HTTP proxies.
 * Proper IPv6 support is still a WIP as noted above.
 
 Acknowledgements
