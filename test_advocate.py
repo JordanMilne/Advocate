@@ -587,5 +587,17 @@ class AdvocateWrapperTests(unittest.TestCase):
         wrapper = RequestsAPIWrapper(AddrValidator())
         self.assertIsNotNone(wrapper.PreparedRequest)
 
+    def test_proxy_attempt_throws(self):
+        # Advocate can't do anything useful when you use a proxy, the proxy
+        # is the one that ultimately makes the connection
+        self.assertRaises(
+            NotImplementedError,
+            advocate.get, "http://example.org/",
+            proxies={
+                "http": "http://example.org:3128",
+                "https": "http://example.org:1080",
+            },
+        )
+
 if __name__ == '__main__':
     unittest.main()

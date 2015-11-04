@@ -35,18 +35,8 @@ def _validating_new_pool(self, scheme, host, port):
 
 # Don't silently break if the private API changes across urllib3 versions
 assert(hasattr(PoolManager, '_new_pool'))
-assert(hasattr(ProxyManager, '_new_pool'))
 
 
 class ValidatingPoolManager(PoolManager):
     POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
     _new_pool = _validating_new_pool
-
-
-class ValidatingProxyPoolManager(ProxyManager):
-    POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
-    _new_pool = _validating_new_pool
-
-
-def proxy_from_url(url, **kw):
-    return ValidatingProxyPoolManager(proxy_url=url, **kw)
