@@ -91,11 +91,13 @@ class AddrValidator(object):
                           (ipaddress.IPv4Address, ipaddress.IPv6Address)):
             addr_ip = ipaddress.ip_address(addr_ip)
 
-        if any(addr_ip in net for net in self.ip_blacklist):
-            return False
-
+        # The whitelist should take precedence over the blacklist so we can
+        # punch holes in blacklisted ranges
         if any(addr_ip in net for net in self.ip_whitelist):
             return True
+
+        if any(addr_ip in net for net in self.ip_blacklist):
+            return False
 
         if any(addr_ip in net for net in _local_addresses):
             return False

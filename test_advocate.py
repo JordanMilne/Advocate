@@ -188,7 +188,7 @@ class ValidateIPTests(unittest.TestCase):
         self.assertTrue(validator.is_ip_allowed("127.0.0.1"))
 
     def test_ip_whitelist_blacklist_conflict(self):
-        """Manual blacklist should take precendence over manual whitelist"""
+        """Manual whitelist should take precendence over manual blacklist"""
         validator = AddrValidator(
             ip_whitelist=(
                 ipaddress.ip_network("127.0.0.1"),
@@ -197,7 +197,7 @@ class ValidateIPTests(unittest.TestCase):
                 ipaddress.ip_network("127.0.0.1"),
             ),
         )
-        self.assertFalse(validator.is_ip_allowed("127.0.0.1"))
+        self.assertTrue(validator.is_ip_allowed("127.0.0.1"))
 
     @unittest.skip("takes half an hour or so to run")
     def test_safecurl_blacklist(self):
