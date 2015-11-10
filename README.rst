@@ -82,6 +82,28 @@ with an unwrapped requests. Advocate passes requests' test suite with the
 exception of tests that require :python:`Session.mount()`.
 
 
+When should I use Advocate?
+===========================
+
+Any time you're fetching resources over HTTP for / from someone you don't trust!
+
+When should I not use Advocate?
+===============================
+
+That's a tough one. There are a few cases I can think of where I wouldn't:
+
+* When good, safe support for IPv6 is important
+* When internal hosts use globally routable addresses and you can't guess their prefix to blacklist it ahead of time
+* You already have a good handle on network security within your network
+
+Actually, if you're comfortable enough with Squid and network security, you should set up a secured Squid instance on a segregated subnet
+and proxy through that instead. Advocate attempts to guess whether an address references an internal host
+and block access, but it's definitely preferable to proxy through a host can't access anything internal in the first place!
+
+Of course, if you're writing an app / library that's meant to be usable OOTB on other people's networks, Advocate + a user-configurable
+blacklist is probably the safer bet.
+
+
 This seems like it's been done before
 =====================================
 
