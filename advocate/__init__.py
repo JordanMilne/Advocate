@@ -1,4 +1,4 @@
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 from requests import utils
 from requests.models import Request, Response, PreparedRequest
