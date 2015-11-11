@@ -26,6 +26,10 @@ Advocate is officially supported on CPython 2.7+, CPython 3.4+ and PyPy 2. PyPy 
 you'll need a copy of the ipaddress module from elsewhere. Python 3 users may also need to install netifaces
 from their `HG repository <https://bitbucket.org/al45tair/netifaces/>`_, as the version currently on PyPi won't install.
 
+See it in action
+================
+
+If you want to try out Advocate to see what kind of things it catches, there's a `test site up on advocate.saynotolinux.com <http://advocate.saynotolinux.com/>`_.
 
 Examples
 ========
