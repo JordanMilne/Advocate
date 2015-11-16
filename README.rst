@@ -185,3 +185,5 @@ Acknowledgements
 * https://github.com/fin1te/safecurl for inspiration
 * https://github.com/kennethreitz/requests for the lovely requests module
 * https://bitbucket.org/kwi/py2-ipaddress for the backport of ipaddress
+* https://github.com/hakobe/paranoidhttp a similar project targeting golang
+* http://search.cpan.org/~tsibley/LWP-UserAgent-Paranoid/ a similar project targeting Perl 5
