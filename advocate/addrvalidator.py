@@ -56,6 +56,7 @@ class AddrValidator(object):
     # Just the well known prefix, DNS64 servers can set their own
     # prefix, but in practice most probably don't.
     _DNS64_WK_PREFIX = ipaddress.ip_network("64:ff9b::/96")
+    DEFAULT_PORT_WHITELIST = {80, 8080, 443, 8443, 8000}
 
     def __init__(
             self,
@@ -70,11 +71,13 @@ class AddrValidator(object):
             allow_dns64=False,
             autodetect_local_addresses=True,
     ):
+        if not port_blacklist and not port_whitelist:
+            # An assortment of common HTTPS? ports.
+            port_whitelist = self.DEFAULT_PORT_WHITELIST.copy()
         self.ip_blacklist = ip_blacklist or set()
         self.ip_whitelist = ip_whitelist or set()
-        self.port_whitelist = port_whitelist or set()
-        # TODO: Blacklist all well-known ports other than 80 and 443 by default?
         self.port_blacklist = port_blacklist or set()
+        self.port_whitelist = port_whitelist or set()
         # TODO: ATM this can contain either regexes or globs that are converted
         # to regexes upon every check. Create a collection that automagically
         # converts them to regexes on insert?

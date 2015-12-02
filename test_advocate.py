@@ -73,6 +73,9 @@ def allow_mount_failure(func):
             return
     return wrapper
 
+# We use port 1 for testing because nothing is likely to legitimately listen
+# on it.
+AddrValidator.DEFAULT_PORT_WHITELIST.add(1)
 
 # Make sure we didn't break requests' base functionality, include its tests
 # TODO: Make this less gross :(
@@ -201,7 +204,7 @@ class ValidateIPTests(unittest.TestCase):
         self.assertTrue(validator.is_ip_allowed("127.0.0.1"))
 
     def test_ip_whitelist_blacklist_conflict(self):
-        """Manual whitelist should take precendence over manual blacklist"""
+        """Manual whitelist should take precedence over manual blacklist"""
         validator = AddrValidator(
             ip_whitelist=(
                 ipaddress.ip_network("127.0.0.1"),
@@ -344,6 +347,17 @@ class AddrInfoTests(unittest.TestCase):
         addrinfo[4] = addrinfo[4] + (1,)
         self.assertRaises(Exception, lambda: vl.is_addrinfo_allowed(addrinfo))
 
+    def test_default_port_whitelist(self):
+        self.assertTrue(
+            self._is_addrinfo_allowed("200.1.1.1", 8080)
+        )
+        self.assertTrue(
+            self._is_addrinfo_allowed("200.1.1.1", 80)
+        )
+        self.assertFalse(
+            self._is_addrinfo_allowed("200.1.1.1", 99)
+        )
+
     def test_port_whitelist(self):
         wl = (80, 10)
         self.assertTrue(
@@ -436,7 +450,7 @@ class HostnameTests(unittest.TestCase):
     def test_missing_canonname(self):
         addrinfo = socket.getaddrinfo(
             "127.0.0.1",
-            0,
+            1,
             0,
             socket.SOCK_STREAM,
         )
