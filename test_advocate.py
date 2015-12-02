@@ -2,6 +2,7 @@
 
 from __future__ import print_function, division
 
+import contextlib
 import functools
 import os.path as path
 import pickle
@@ -20,12 +21,24 @@ class _DisallowedConnectException(Exception):
 
 
 class _WrappedSocket(socket.socket):
+    _checks_enabled = True
+
+    @classmethod
+    @contextlib.contextmanager
+    def bypass_checks(cls):
+        try:
+            cls._checks_enabled = False
+            yield
+        finally:
+            cls._checks_enabled = True
+
     def connect(self, *args, **kwargs):
-        CONNECT_ALLOWED_FUNCS = {"validating_create_connection"}
-        stack_names = (x[2] for x in traceback.extract_stack())
-        if not any(name in CONNECT_ALLOWED_FUNCS for name in stack_names):
-            raise _DisallowedConnectException("calling socket.connect() "
-                                              "unsafely!")
+        if self._checks_enabled:
+            CONNECT_ALLOWED_FUNCS = {"validating_create_connection"}
+            stack_names = (x[2] for x in traceback.extract_stack())
+            if not any(name in CONNECT_ALLOWED_FUNCS for name in stack_names):
+                raise _DisallowedConnectException("calling socket.connect() "
+                                                  "unsafely!")
         return super(_WrappedSocket, self).connect(*args, **kwargs)
 
 
@@ -445,6 +458,26 @@ class HostnameTests(unittest.TestCase):
         self.assertFalse(vl.is_hostname_allowed("foo.example.com\x00.baz.com"))
         self.assertFalse(vl.is_hostname_allowed(u"foo.baz.com\x00.example.com"))
         self.assertFalse(vl.is_hostname_allowed(u"foo.example.com\x00.baz.com"))
+
+
+class ConnectionPoolingTests(unittest.TestCase):
+    @patch("advocate.connection.ValidatingHTTPConnection._new_conn")
+    def test_connection_reuse(self, mock_new_conn):
+        # Just because you can use an existing connection doesn't mean you
+        # should. The disadvantage of us working at the socket level means that
+        # we get bitten if a connection pool is shared between regular requests
+        # and advocate.
+        # This can never happen with requests, but let's set a good example :)
+        with _WrappedSocket.bypass_checks():
+            # HTTPBin supports `keep-alive`, so it's a good test subject
+            requests.get("http://httpbin.org/")
+        try:
+            advocate.get("http://httpbin.org/")
+        except:
+            pass
+        # Requests may retry several times, but our mock doesn't return a real
+        # socket. Just check that it tried to create one.
+        mock_new_conn.assert_any_call()
 
 
 class AdvocateWrapperTests(unittest.TestCase):
