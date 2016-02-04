@@ -22,7 +22,8 @@ install:
   # versions. Look into upgrading PyPy instead.
   - pip install 'cryptography<1.0'
   - python setup.py -q install
-script: nosetests --with-coverage --cover-package=advocate
+  - pip install -r requirements.txt
+script: py.test --cov=advocate --cov-config=.coveragerc test_advocate.py
 
 # Coverage metrics
 before_install:

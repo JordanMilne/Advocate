@@ -1,9 +1,10 @@
 # coding=utf-8
 
-from __future__ import print_function, division
+from __future__ import division
 
 import contextlib
 import functools
+import inspect
 import os.path as path
 import pickle
 import re
@@ -44,8 +45,11 @@ class _WrappedSocket(socket.socket):
 
 socket.socket = _WrappedSocket
 
+pytest_plugins = "advocate_pytest"
 
 from mock import patch
+import pytest
+from pytest import fixture
 import requests
 
 import advocate
@@ -58,20 +62,6 @@ from advocate.exceptions import (
 )
 from advocate.packages import ipaddress
 
-
-def allow_mount_failure(func):
-    """Pass any tests that failed due to mount() not being allowed
-
-    Advocate isn't supposed to allow mounting, it doesn't make sense to test!
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            func(*args, **kwargs)
-        except MountDisabledException:
-            print("Skipping test that uses mount()", file=sys.stderr)
-            return
-    return wrapper
 
 # We use port 1 for testing because nothing is likely to legitimately listen
 # on it.
@@ -90,9 +80,9 @@ advocate_wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
 requests_dir = path.dirname(requests.__file__)
 tests_path = path.join(path.dirname(requests_dir), "test_requests.py")
 if not path.exists(tests_path):
-    print("Couldn't find requests' test suite, skipping", file=sys.stderr)
+    print("Couldn't find requests' test suite, skipping")
 else:
-    print("Found requests' test suite", file=sys.stderr)
+    print("Found requests' test suite")
 
     with open(tests_path, "r", "utf-8") as f:
         tests_source = f.read()
@@ -112,28 +102,27 @@ else:
         # This needs a timeout or it'll spin forever!
         tests_source = tests_source.replace('http://httpbin.org:1")',
                                             'http://httpbin.org:1", timeout=2)')
-        # XXX: Ugh, would this not be a problem if I didn't use nose?
-        # these tests seem to be broken.
-        tests_source = tests_source.replace("pytest.mark.xfail",
-                                            "unittest.skip")
+        tests_source = tests_source.replace('print argthing',
+                                            'print(argthing)')
         # Use our hooked methods instead of requests'
         methods_re = "|".join(("get", "post", "delete", "patch", "options",
                                "put", "head", "session", "Session", "request"))
         tests_source = re.sub(r"(?<=\b)requests\.(" + methods_re + r")(?=\b)",
                               r"advocate_wrapper.\1",
                               tests_source)
-        # Don't barf on mount() failures, we don't allow `mount()`ing
-        tests_source = re.sub(r"^(\s+)(?=def test_)",
-                              "\\1@allow_mount_failure\n\\1",
-                              tests_source,
-                              flags=re.M)
-        exec(tests_source.encode("utf-8"))
 
-        # These tests just don't seem to work under nose + unittest
-        if "test_data_argument_accepts_tuples" in globals():
-            del globals()["test_data_argument_accepts_tuples"]
-        if "test_prepare_unicode_url" in globals():
-            del globals()["test_prepare_unicode_url"]
+        local_env = {}
+        exec(tests_source.encode("utf-8"), globals(), local_env)
+
+        # These tests are busted under newer pytest versions or Py3
+        BANNED_GLOBS = {
+            "test_vendor_aliases",
+            "test_data_argument_accepts_tuples",
+            "test_prepare_unicode_url",
+        }
+        for glob_name, glob_val in local_env.items():
+            if glob_name not in BANNED_GLOBS:
+                locals()[glob_name] = glob_val
 
 
 def canonname_supported():

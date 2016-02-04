@@ -2,6 +2,7 @@
 .*.sw?
 *.pyc
 *.pyo
+.cache
 .DS_Store
 *.diff
 *.patch
