@@ -41,6 +41,7 @@ setup(
         "pytest==2.8.7",
         "pytest-cov==2.1.0",
         "pytest-httpbin==0.0.7",
+        "requests-futures",
     ],
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',

@@ -26,6 +26,7 @@ class Session(requests.Session):
     """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
     def __init__(self, *args, **kwargs):
         self.validator = kwargs.pop("validator", None)
+        adapter_kwargs = kwargs.pop("_adapter_kwargs", {})
 
         # `Session.__init__()` calls `mount()` internally, so we need to allow
         # it temporarily
@@ -35,9 +36,8 @@ class Session(requests.Session):
         # Drop any existing adapters
         self.adapters = OrderedDict()
 
-        adapter = ValidatingHTTPAdapter(validator=self.validator)
-        self.mount("http://", adapter)
-        self.mount("https://", adapter)
+        self.mount("http://", ValidatingHTTPAdapter(validator=self.validator, **adapter_kwargs))
+        self.mount("https://", ValidatingHTTPAdapter(validator=self.validator, **adapter_kwargs))
         self.__mountAllowed = False
 
     def mount(self, *args, **kwargs):

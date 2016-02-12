@@ -85,6 +85,36 @@ Other than that, you can do just about everything with Advocate that you can
 with an unwrapped requests. Advocate passes requests' test suite with the
 exception of tests that require :python:`Session.mount()`.
 
+requests-futures support
+========================
+
+A thin wrapper around `requests-futures <https://github.com/ross/requests-futures>`_ is provided to ease writing async-friendly code:
+
+.. code-block:: python
+
+    >>> from advocate.futures import FuturesSession
+    >>> sess = FuturesSession()
+    >>> fut = sess.get("http://example.com/")
+    >>> fut
+    <Future at 0x10c717f28 state=finished returned Response>
+    >>> fut.result()
+    <Response [200]>
+
+You can do basically everything you can do with regular :python:`FuturesSession` s and :python:`advocate.Session` s:
+
+.. code-block:: python
+
+    >>> from advocate import AddrValidator
+    >>> from advocate.futures import FuturesSession
+    >>> sess = FuturesSession(max_workers=20, validator=AddrValidator(hostname_blacklist={"*.museum"}))
+    >>> fut = sess.get("http://anice.museum/")
+    >>> fut
+    <Future at 0x10c696668 state=running>
+    >>> fut.result()
+    Traceback (most recent call last):
+    # [...]
+    advocate.exceptions.UnacceptableAddressException: anice.museum
+
 
 When should I use Advocate?
 ===========================

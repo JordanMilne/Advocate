@@ -22,6 +22,7 @@ def pytest_runtest_makereport(item, call):
         if not isinstance(excinfo, ExceptionInfo):
             outcome = "failed"
             longrepr = excinfo
+        # TODO: Yucko, need some way to scope this to requests' tests only
         elif excinfo.errisinstance((pytest.skip.Exception, MountDisabledException)):
             outcome = "skipped"
             r = excinfo._getreprcrash()

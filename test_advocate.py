@@ -61,6 +61,7 @@ from advocate.exceptions import (
     UnacceptableAddressException,
 )
 from advocate.packages import ipaddress
+from advocate.futures import FuturesSession
 
 
 # We use port 1 for testing because nothing is likely to legitimately listen
@@ -642,6 +643,42 @@ class AdvocateWrapperTests(unittest.TestCase):
                 "https": "http://example.org:1080",
             },
         )
+
+
+class AdvocateFuturesTest(unittest.TestCase):
+    def test_get(self):
+        sess = FuturesSession()
+        assert 200 == sess.get("http://example.org/").result().status_code
+
+    def test_custom_validator(self):
+        validator = AddrValidator(hostname_blacklist={"example.org"})
+        sess = FuturesSession(validator=validator)
+        self.assertRaises(
+            UnacceptableAddressException,
+            lambda: sess.get("http://example.org").result()
+        )
+
+    def test_many_workers(self):
+        sess = FuturesSession(max_workers=50)
+        self.assertRaises(
+            UnacceptableAddressException,
+            lambda: sess.get("http://127.0.0.1:1/").result()
+        )
+
+    def test_passing_session(self):
+        try:
+            FuturesSession(session=advocate.Session())
+            assert False
+        except NotImplementedError:
+            pass
+
+        sess = FuturesSession()
+        try:
+            sess.session = advocate.Session()
+            assert False
+        except NotImplementedError:
+            pass
+
 
 if __name__ == '__main__':
     unittest.main()
