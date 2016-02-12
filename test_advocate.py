@@ -105,7 +105,7 @@ else:
         tests_source = tests_source.replace('print argthing',
                                             'print(argthing)')
         # God I hate pytest's test fixtures.
-        tests_source = re.sub(r"def (http(bin|sbin_url))\(([^\)]+)\):",
+        tests_source = re.sub(r"def (http(bin|sbin_url))\((\w+)\):",
                               "def \\1(\\3):\n"
                               "    parsed_url = urlparse(\\3.url)\n"
                               "    print (parsed_url.port)\n"
