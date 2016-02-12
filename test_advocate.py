@@ -104,6 +104,14 @@ else:
                                             'http://httpbin.org:1", timeout=2)')
         tests_source = tests_source.replace('print argthing',
                                             'print(argthing)')
+        # God I hate pytest's test fixtures.
+        tests_source = re.sub(r"def (http(bin|sbin_url))\(([^\)]+)\):",
+                              "def \\1(\\3):\n"
+                              "    parsed_url = urlparse(\\3.url)\n"
+                              "    print (parsed_url.port)\n"
+                              "    advocate_wrapper.validator.port_whitelist.add(parsed_url.port)\n",
+                              tests_source)
+
         # Use our hooked methods instead of requests'
         methods_re = "|".join(("get", "post", "delete", "patch", "options",
                                "put", "head", "session", "Session", "request"))
