@@ -667,17 +667,19 @@ class AdvocateFuturesTest(unittest.TestCase):
 
     def test_passing_session(self):
         try:
-            FuturesSession(session=advocate.Session())
+            FuturesSession(session=requests.Session())
             assert False
         except NotImplementedError:
             pass
 
         sess = FuturesSession()
         try:
-            sess.session = advocate.Session()
+            sess.session = requests.Session()
             assert False
         except NotImplementedError:
             pass
+
+        sess.session = advocate.Session()
 
 
 if __name__ == '__main__':
