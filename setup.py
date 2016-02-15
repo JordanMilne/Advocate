@@ -1,11 +1,10 @@
 import re
-
+import sys
 from codecs import open
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+import setuptools
+from setuptools.command.test import test as TestCommand
+
 
 requires = [
     'requests <3.0, >=2.4',
@@ -30,7 +29,22 @@ with open('advocate/__init__.py', 'r') as fd:
 with open('README.rst', 'r', 'utf-8') as f:
     readme = f.read()
 
-setup(
+
+class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import pytest
+        errno = pytest.main(self.pytest_args)
+        sys.exit(errno)
+
+
+setuptools.setup(
     name='advocate',
     version=version,
     packages=packages,
@@ -42,6 +56,10 @@ setup(
         "pytest-cov==2.1.0",
         "pytest-httpbin==0.0.7",
         "requests-futures",
+    ],
+    cmdclass={'test': PyTest},
+    setup_requires=[
+        'pytest-runner',
     ],
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',

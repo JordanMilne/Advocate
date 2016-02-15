@@ -23,7 +23,7 @@ install:
   - pip install 'cryptography<1.0'
   - python setup.py -q install
   - pip install -r requirements-test.txt
-script: py.test --cov=advocate --cov-config=.coveragerc test_advocate.py
+script: py.test --cov=advocate --cov-config=.coveragerc
 
 # Coverage metrics
 before_install:

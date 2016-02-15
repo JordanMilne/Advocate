@@ -27,6 +27,7 @@ class _WrappedSocket(socket.socket):
     @classmethod
     @contextlib.contextmanager
     def bypass_checks(cls):
+
         try:
             cls._checks_enabled = False
             yield
