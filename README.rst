@@ -8,6 +8,10 @@ Advocate
     :target: https://travis-ci.org/JordanMilne/Advocate/
 .. image:: https://codecov.io/github/JordanMilne/Advocate/coverage.svg?branch=master
     :target: https://codecov.io/github/JordanMilne/Advocate
+.. image:: https://img.shields.io/pypi/pyversions/advocate.svg
+.. image:: https://img.shields.io/pypi/v/advocate.svg
+    :target: https://pypi.python.org/pypi/advocate
+
 
 Advocate is a set of tools based around the `requests library <https://github.com/kennethreitz/requests>`_ for safely making
 HTTP requests on behalf of a third party. Specifically, it aims to prevent 
