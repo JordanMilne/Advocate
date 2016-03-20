@@ -682,6 +682,34 @@ class AdvocateFuturesTest(unittest.TestCase):
 
         sess.session = advocate.Session()
 
+    def test_advocate_wrapper_futures(self):
+        wrapper = RequestsAPIWrapper(validator=AddrValidator())
+        local_validator = AddrValidator(ip_whitelist={
+            ipaddress.ip_network("127.0.0.1"),
+        })
+        local_wrapper = RequestsAPIWrapper(validator=local_validator)
+
+        with self.assertRaises(UnacceptableAddressException):
+            sess = wrapper.FuturesSession()
+            sess.get("http://127.0.0.1/").result()
+
+        with self.assertRaises(Exception) as cm:
+            sess = local_wrapper.FuturesSession()
+            sess.get("http://127.0.0.1:1/").result()
+        # Check that we got a connection exception instead of a validation one
+        # This might be either exception depending on the requests version
+        self.assertRegexpMatches(
+            cm.exception.__class__.__name__,
+            r"\A(Connection|Protocol)Error",
+        )
+
+        with self.assertRaises(UnacceptableAddressException):
+            sess = wrapper.FuturesSession()
+            sess.get("http://localhost:1/").result()
+        with self.assertRaises(UnacceptableAddressException):
+            sess = wrapper.FuturesSession()
+            sess.get("https://localhost:1/").result()
+
 
 if __name__ == '__main__':
     unittest.main()

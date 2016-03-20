@@ -186,6 +186,13 @@ def delete(url, **kwargs):
 class RequestsAPIWrapper(object):
     """Provides a `requests.api`-like interface with a specific validator"""
     def __init__(self, validator):
+        # Do this here to avoid circular import issues
+        try:
+            from .futures import FuturesSession
+            have_requests_futures = True
+        except ImportError as e:
+            have_requests_futures = False
+
         self.validator = validator
         outer_self = self
 
@@ -201,6 +208,16 @@ class RequestsAPIWrapper(object):
                 # Dynamically created classes like this are a pain to pickle,
                 # instantiate a base `Session` instead.
                 return Session(*args, **kwargs)
+
+
+        if have_requests_futures:
+
+            class _WrappedFuturesSession(FuturesSession):
+                """Like _WrappedSession, but for `FuturesSession`s"""
+                def __new__(cls, *args, **kwargs):
+                    kwargs.setdefault("validator", outer_self.validator)
+                    return FuturesSession(*args, **kwargs)
+            self.FuturesSession = _WrappedFuturesSession
 
         self.request = self._default_arg_wrapper(request)
         self.get = self._default_arg_wrapper(get)
