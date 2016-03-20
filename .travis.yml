@@ -16,6 +16,20 @@ env:
   # Latest version of requests, for good measure
   - REQUESTS_PACKAGE="requests"
 install:
+  # Try to install a newer PyPy, travis-ci.org's is ancient
+  - |
+      if [ "$TRAVIS_PYTHON_VERSION" = "pypy" ]; then
+        export PYENV_ROOT="$HOME/.pyenv"
+        if [ -f "$PYENV_ROOT/bin/pyenv" ]; then
+          pushd "$PYENV_ROOT" && git pull && popd
+        else
+          rm -rf "$PYENV_ROOT" && git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
+        fi
+        export PYPY_VERSION="4.0.1"
+        "$PYENV_ROOT/bin/pyenv" install --skip-existing "pypy-$PYPY_VERSION"
+        virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
+        source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
+      fi
   - bash install_complex_deps.sh
   - bash install_dev_requests.sh $REQUESTS_PACKAGE
   # travis-ci.org only has PyPy 2.5, which chokes on newer cryptography

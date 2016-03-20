@@ -5,3 +5,4 @@ pytest-httpbin==0.0.7
 httpbin==0.4.0
 requests-futures==0.9.7
 wheel
+mock

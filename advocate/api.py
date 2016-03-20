@@ -209,7 +209,6 @@ class RequestsAPIWrapper(object):
                 # instantiate a base `Session` instead.
                 return Session(*args, **kwargs)
 
-
         if have_requests_futures:
 
             class _WrappedFuturesSession(FuturesSession):
