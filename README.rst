@@ -89,6 +89,21 @@ Other than that, you can do just about everything with Advocate that you can
 with an unwrapped requests. Advocate passes requests' test suite with the
 exception of tests that require :python:`Session.mount()`.
 
+Conditionally bypassing protection
+==================================
+
+If you want to allow certain users to bypass Advocate's restrictions, just
+use plain 'ol requests by doing something like:
+
+.. code-block:: python
+
+    if user == "mr_skeltal":
+        requests_module = requests
+    else:
+        requests_module = advocate
+    resp = requests_module.get("http://example.com/doot_doot")
+
+
 requests-futures support
 ========================
 
