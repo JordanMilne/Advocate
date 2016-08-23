@@ -235,4 +235,5 @@ Acknowledgements
 * https://github.com/kennethreitz/requests for the lovely requests module
 * https://bitbucket.org/kwi/py2-ipaddress for the backport of ipaddress
 * https://github.com/hakobe/paranoidhttp a similar project targeting golang
+* https://github.com/uber-common/paranoid-request a similar project targeting Node
 * http://search.cpan.org/~tsibley/LWP-UserAgent-Paranoid/ a similar project targeting Perl 5
