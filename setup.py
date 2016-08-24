@@ -12,7 +12,7 @@ requires = [
     "pyasn1",
     "pyopenssl",
     "ndg-httpsclient",
-    'netifaces>=0.10',
+    'netifaces>=0.10.5',
 ]
 
 packages = [

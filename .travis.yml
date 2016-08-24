@@ -30,11 +30,7 @@ install:
         virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
         source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
       fi
-  - bash install_complex_deps.sh
   - bash install_dev_requests.sh $REQUESTS_PACKAGE
-  # travis-ci.org only has PyPy 2.5, which chokes on newer cryptography
-  # versions. Look into upgrading PyPy instead.
-  - pip install 'cryptography<1.0'
   - python setup.py -q install
   - pip install -r requirements-test.txt
 script: py.test --cov=advocate --cov-config=.coveragerc

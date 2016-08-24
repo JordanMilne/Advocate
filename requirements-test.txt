@@ -4,5 +4,7 @@ pytest-cov==2.1.0
 pytest-httpbin==0.0.7
 httpbin==0.4.0
 requests-futures==0.9.7
+netifaces==0.10.5
+cryptography==1.4
 wheel
 mock
