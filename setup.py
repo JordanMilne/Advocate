@@ -56,6 +56,7 @@ setuptools.setup(
         "pytest-cov==2.1.0",
         "pytest-httpbin==0.0.7",
         "requests-futures",
+        "requests-mock",
     ],
     cmdclass={'test': PyTest},
     setup_requires=[

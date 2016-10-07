@@ -8,3 +8,4 @@ netifaces==0.10.5
 cryptography==1.4
 wheel
 mock
+requests-mock

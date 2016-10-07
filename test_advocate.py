@@ -52,6 +52,7 @@ from mock import patch
 import pytest
 from pytest import fixture
 import requests
+import requests_mock
 
 import advocate
 from advocate import AddrValidator, RequestsAPIWrapper
@@ -627,6 +628,26 @@ class AdvocateWrapperTests(unittest.TestCase):
             wrapper.get,
             "https://google.com/",
         )
+
+    def test_advocate_requests_api_wrapper_req_methods(self):
+        # Make sure all the convenience methods make requests with the correct
+        # methods
+        wrapper = RequestsAPIWrapper(AddrValidator())
+
+        def _test_method(method_name):
+            with requests_mock.mock() as request_mock:
+                # This will fail if the request expected by `request_mock`
+                # isn't sent when calling the wrapper method
+                getattr(request_mock, method_name)("http://example.com/foo")
+                getattr(wrapper, method_name)("http://example.com/foo")
+
+        _test_method("get")
+        _test_method("options")
+        _test_method("head")
+        _test_method("post")
+        _test_method("put")
+        _test_method("patch")
+        _test_method("delete")
 
     def test_wrapper_getattr_fallback(self):
         # Make sure wrappers include everything in Advocate's `__init__.py`

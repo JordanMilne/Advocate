@@ -221,7 +221,7 @@ class RequestsAPIWrapper(object):
         self.request = self._default_arg_wrapper(request)
         self.get = self._default_arg_wrapper(get)
         self.options = self._default_arg_wrapper(options)
-        self.head = self._default_arg_wrapper(options)
+        self.head = self._default_arg_wrapper(head)
         self.post = self._default_arg_wrapper(post)
         self.put = self._default_arg_wrapper(put)
         self.patch = self._default_arg_wrapper(patch)
