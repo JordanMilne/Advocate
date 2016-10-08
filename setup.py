@@ -43,6 +43,7 @@ setuptools.setup(
         "pytest-httpbin",
         "requests-futures",
         "requests-mock",
+        "flake8"
     ],
     cmdclass={
         'test': PyTest,
