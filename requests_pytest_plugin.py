@@ -6,13 +6,15 @@ import pytest
 from _pytest.runner import TestReport
 from py._code.code import ExceptionInfo
 
-from advocate.exceptions import MountDisabledException
+from advocate.exceptions import MountDisabledException, ProxyDisabledException
+
+SKIP_EXCEPTIONS = (pytest.skip.Exception, MountDisabledException, ProxyDisabledException)
 
 
 def pytest_runtest_makereport(item, call):
     when = call.when
-    duration = call.stop-call.start
-    keywords = dict([(x,1) for x in item.keywords])
+    duration = call.stop - call.start
+    keywords = dict([(x, 1) for x in item.keywords])
     excinfo = call.excinfo
     sections = []
     if not call.excinfo:
@@ -22,8 +24,7 @@ def pytest_runtest_makereport(item, call):
         if not isinstance(excinfo, ExceptionInfo):
             outcome = "failed"
             longrepr = excinfo
-        # TODO: Yucko, need some way to scope this to requests' tests only
-        elif excinfo.errisinstance((pytest.skip.Exception, MountDisabledException)):
+        elif excinfo.errisinstance(SKIP_EXCEPTIONS):
             outcome = "skipped"
             r = excinfo._getreprcrash()
             longrepr = (str(r.path), r.lineno, r.message)
@@ -31,11 +32,12 @@ def pytest_runtest_makereport(item, call):
             outcome = "failed"
             if call.when == "call":
                 longrepr = item.repr_failure(excinfo)
-            else: # exception in setup or teardown
+            # exception in setup or teardown
+            else:
                 longrepr = item._repr_failure_py(excinfo,
-                                            style=item.config.option.tbstyle)
+                                                 style=item.config.option.tbstyle)
     for rwhen, key, content in item._report_sections:
-        sections.append(("Captured %s %s" %(key, rwhen), content))
+        sections.append(("Captured %s %s" % (key, rwhen), content))
     return TestReport(item.nodeid, item.location,
                       keywords, outcome, longrepr, when,
                       sections, duration)

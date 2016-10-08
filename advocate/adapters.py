@@ -1,6 +1,7 @@
 from requests.adapters import HTTPAdapter, DEFAULT_POOLBLOCK
 
 from .addrvalidator import AddrValidator
+from .exceptions import ProxyDisabledException
 from .poolmanager import ValidatingPoolManager
 
 
@@ -39,7 +40,7 @@ class ValidatingHTTPAdapter(HTTPAdapter):
         :param proxy_kwargs: Extra keyword arguments used to configure the Proxy Manager.
         :returns: ProxyManager
         """
-        raise NotImplementedError("Proxy support not ready")
+        raise ProxyDisabledException("Proxy support not ready")
         # TODO: Look into urllib3 internals to see what _proper_ proxy support
         # would entail
         # if proxy not in self.proxy_manager:

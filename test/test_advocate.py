@@ -2,55 +2,16 @@
 
 from __future__ import division
 
-import contextlib
-import functools
-import inspect
-import os.path as path
 import pickle
-import re
 import socket
-import sys
-import traceback
 import unittest
-from codecs import open
-
 
 # This needs to be done before third-party imports to make sure they all use
 # our wrapped socket class, especially in case of subclasses.
-class _DisallowedConnectException(Exception):
-    pass
-
-
-class _WrappedSocket(socket.socket):
-    _checks_enabled = True
-
-    @classmethod
-    @contextlib.contextmanager
-    def bypass_checks(cls):
-
-        try:
-            cls._checks_enabled = False
-            yield
-        finally:
-            cls._checks_enabled = True
-
-    def connect(self, *args, **kwargs):
-        if self._checks_enabled:
-            CONNECT_ALLOWED_FUNCS = {"validating_create_connection"}
-            stack_names = (x[2] for x in traceback.extract_stack())
-            if not any(name in CONNECT_ALLOWED_FUNCS for name in stack_names):
-                raise _DisallowedConnectException("calling socket.connect() "
-                                                  "unsafely!")
-        return super(_WrappedSocket, self).connect(*args, **kwargs)
-
-
-socket.socket = _WrappedSocket
-
-pytest_plugins = "advocate_pytest"
+from .monkeypatching import CheckedSocket, DisallowedConnectException
+socket.socket = CheckedSocket
 
 from mock import patch
-import pytest
-from pytest import fixture
 import requests
 import requests_mock
 
@@ -69,71 +30,6 @@ from advocate.futures import FuturesSession
 # We use port 1 for testing because nothing is likely to legitimately listen
 # on it.
 AddrValidator.DEFAULT_PORT_WHITELIST.add(1)
-
-# Make sure we didn't break requests' base functionality, include its tests
-# TODO: Make this less gross :(
-advocate_wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
-    # requests needs to be able to hit these for its tests!
-    ipaddress.ip_network("127.0.0.1"),
-    ipaddress.ip_network("127.0.1.1"),
-    ipaddress.ip_network("10.255.255.1"),
-}))
-
-# We want the tests for the version of requests we're currently using
-requests_dir = path.dirname(requests.__file__)
-tests_path = path.join(path.dirname(requests_dir), "test_requests.py")
-if not path.exists(tests_path):
-    print("Couldn't find requests' test suite, skipping")
-else:
-    print("Found requests' test suite")
-
-    with open(tests_path, "r", "utf-8") as f:
-        tests_source = f.read()
-        # These have to be imported at the top of the file, too late!
-        tests_source = re.sub(r"from __future__.*$", "", tests_source,
-                              flags=re.M)
-        # We have our own at the bottom of this file.
-        tests_source = re.sub(r'^if __name__ == "__main__".*', "", tests_source,
-                              flags=re.M | re.S)
-        # Replace filename references so they're to files we _do_ have
-        tests_source = tests_source.replace("requirements.txt", "README.rst")
-        tests_source = tests_source.replace("test_requests.py",
-                                            "test_advocate.py")
-        # This domain _does_ resolve now, though it wasn't supposed to.
-        tests_source = tests_source.replace("fooobarbangbazbing.httpbin.org",
-                                            "fooobarbangbazbing.example.org")
-        # This needs a timeout or it'll spin forever!
-        tests_source = tests_source.replace('http://httpbin.org:1")',
-                                            'http://httpbin.org:1", timeout=2)')
-        tests_source = tests_source.replace('print argthing',
-                                            'print(argthing)')
-        # God I hate pytest's test fixtures.
-        tests_source = re.sub(r"def (http(bin|sbin_url))\((\w+)\):",
-                              "def \\1(\\3):\n"
-                              "    parsed_url = urlparse(\\3.url)\n"
-                              "    print (parsed_url.port)\n"
-                              "    advocate_wrapper.validator.port_whitelist.add(parsed_url.port)\n",
-                              tests_source)
-
-        # Use our hooked methods instead of requests'
-        methods_re = "|".join(("get", "post", "delete", "patch", "options",
-                               "put", "head", "session", "Session", "request"))
-        tests_source = re.sub(r"(?<=\b)requests\.(" + methods_re + r")(?=\b)",
-                              r"advocate_wrapper.\1",
-                              tests_source)
-
-        local_env = {}
-        exec(tests_source.encode("utf-8"), globals(), local_env)
-
-        # These tests are busted under newer pytest versions or Py3
-        BANNED_GLOBS = {
-            "test_vendor_aliases",
-            "test_data_argument_accepts_tuples",
-            "test_prepare_unicode_url",
-        }
-        for glob_name, glob_val in local_env.items():
-            if glob_name not in BANNED_GLOBS:
-                locals()[glob_name] = glob_val
 
 
 def canonname_supported():
@@ -167,7 +63,7 @@ def permissive_validator(**kwargs):
 class TestWrapperTests(unittest.TestCase):
     def test_unsafe_connect_raises(self):
         self.assertRaises(
-            _DisallowedConnectException,
+            DisallowedConnectException,
             requests.get, "http://example.org/"
         )
 
@@ -482,7 +378,7 @@ class ConnectionPoolingTests(unittest.TestCase):
         # we get bitten if a connection pool is shared between regular requests
         # and advocate.
         # This can never happen with requests, but let's set a good example :)
-        with _WrappedSocket.bypass_checks():
+        with CheckedSocket.bypass_checks():
             # HTTPBin supports `keep-alive`, so it's a good test subject
             requests.get("http://httpbin.org/")
         try:

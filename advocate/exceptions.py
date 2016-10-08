@@ -12,3 +12,7 @@ class NameserverException(AdvocateException):
 
 class MountDisabledException(AdvocateException):
     pass
+
+
+class ProxyDisabledException(NotImplementedError, AdvocateException):
+    pass
