@@ -44,8 +44,6 @@ class PyTestRequestsCompliance(TestCommand):
         if not self.requests_location:
             raise Exception("requests-location parameter is required!")
         self.requests_location = os.path.abspath(self.requests_location)
-        if not self.requests_location.endswith(".py"):
-            self.requests_location += "/"
         if self.pytest_args:
             self.pytest_args = [self.pytest_args]
         self.pytest_args.extend(("-x", self.requests_location))

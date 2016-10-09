@@ -1,10 +1,8 @@
 import re
+import setuptools
 from codecs import open
 
-import setuptools
-
-from test.commands import PyTestRequestsCompliance, PyTest
-
+from commands import PyTestRequestsCompliance, PyTest
 
 requires = [
     'requests <3.0, >=2.4',
