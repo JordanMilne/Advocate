@@ -557,6 +557,22 @@ class AdvocateWrapperTests(unittest.TestCase):
             },
         )
 
+    @patch("advocate.addrvalidator.determine_local_addresses")
+    def test_connect_without_local_addresses(self, mock_determine_local_addresses):
+        fake_addresses = [ipaddress.ip_network("200.1.1.1")]
+        mock_determine_local_addresses.return_value = fake_addresses
+
+        validator = permissive_validator(autodetect_local_addresses=True)
+        advocate.get("http://example.com/", validator=validator)
+        # Check that `is_ip_allowed` didn't make its own call to determine
+        # local addresses
+        mock_determine_local_addresses.assert_called_once_with()
+        mock_determine_local_addresses.reset_mock()
+
+        validator = permissive_validator(autodetect_local_addresses=False)
+        advocate.get("http://example.com", validator=validator)
+        mock_determine_local_addresses.assert_not_called()
+
 
 class AdvocateFuturesTest(unittest.TestCase):
     def test_get(self):

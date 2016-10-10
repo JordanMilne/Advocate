@@ -6,7 +6,7 @@ from requests.packages.urllib3.exceptions import ConnectTimeoutError
 from requests.packages.urllib3.util.connection import _set_socket_options
 from requests.packages.urllib3.util.connection import create_connection as old_create_connection
 
-from .addrvalidator import determine_local_addresses
+from . import addrvalidator
 from .exceptions import UnacceptableAddressException
 from .packages import ipaddress
 
@@ -82,7 +82,7 @@ def validating_create_connection(address,
     addrinfo = advocate_getaddrinfo(host, port, get_canonname=need_canonname)
     if addrinfo:
         if validator.autodetect_local_addresses:
-            local_addresses = determine_local_addresses()
+            local_addresses = addrvalidator.determine_local_addresses()
         else:
             local_addresses = []
         for res in addrinfo:
