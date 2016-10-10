@@ -1,5 +1,6 @@
 import contextlib
 import os
+import socket
 import sys
 
 from setuptools.command.test import test as TestCommand
@@ -55,7 +56,7 @@ class PyTestRequestsCompliance(TestCommand):
 
         import advocate
         import advocate.packages.ipaddress as ipaddress
-        from test.monkeypatching import AdvocateEnforcer
+        from test.monkeypatching import AdvocateEnforcer, CheckedSocket
 
         # We need to change to the checkout dir, requests' test suite expects certain files
         # to be in the CWD.
@@ -72,5 +73,6 @@ class PyTestRequestsCompliance(TestCommand):
             )
             enforcer = AdvocateEnforcer(validator)
             with enforcer.monkeypatch_requests_module():
+                socket.socket = CheckedSocket
                 errno = pytest.main(self.pytest_args, plugins=["requests_pytest_plugin"])
                 sys.exit(errno)
