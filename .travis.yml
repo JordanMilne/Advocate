@@ -7,13 +7,9 @@ python:
   - "3.5"
   - "pypy"
 env:
-  - REQUESTS_VERSION="2.12.3"
+  - REQUESTS_VERSION="2.13.0"
   - REQUESTS_VERSION="2.11.1"
-  - REQUESTS_VERSION="2.10.0"
   - REQUESTS_VERSION="2.9.2"
-  - REQUESTS_VERSION="2.8.1"
-  - REQUESTS_VERSION="2.7.0"
-  - REQUESTS_VERSION="2.6.2"
   - REQUESTS_VERSION="2.5.3"
 install:
   # Try to install a newer PyPy, travis-ci.org's is ancient
