@@ -65,7 +65,7 @@ class AdvocateEnforcer(object):
     def _inside_advocate_call(cls):
         """Check if we are already inside a function that's a part of Advocate"""
         advocate_files = set()
-        for name, mod in list(sys.modules.items()):
+        for name, mod in sys.modules.items():
             if not mod:
                 continue
             if name and cls.ADVOCATE_RE.match(name):

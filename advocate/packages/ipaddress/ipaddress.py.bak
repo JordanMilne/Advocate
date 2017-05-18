@@ -6,7 +6,7 @@
 # s/class \(\w\+\):/class \1(object):/
 
 # Use iterator versions of map and range:
-
+from itertools import imap as map
 range = xrange
 
 # This backport uses bytearray instead of bytes, as bytes is the same
@@ -21,9 +21,9 @@ _builtin_isinstance = isinstance
 
 def isinstance(val, types):
     if types is int:
-        types = (int, int)
+        types = (int, long)
     elif type(types) is tuple and int in types:
-        types += (int,)
+        types += (long,)
     return _builtin_isinstance(val, types)
 
 # functools.lru_cache is Python 3.2+ only.
@@ -1165,7 +1165,7 @@ class _BaseV4(object):
             raise AddressValueError("Expected 4 octets in %r" % ip_str)
 
         try:
-            return _int_from_bytes(list(map(self._parse_octet, octets)), 'big')
+            return _int_from_bytes(map(self._parse_octet, octets), 'big')
         except ValueError as exc:
             raise AddressValueError("%s in %r" % (exc, ip_str))
 

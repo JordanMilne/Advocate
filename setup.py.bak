@@ -2,7 +2,7 @@ import re
 import setuptools
 from codecs import open
 
-from subprocess import PyTestRequestsCompliance, PyTest
+from commands import PyTestRequestsCompliance, PyTest
 
 requires = [
     'requests <3.0, >=2.4',

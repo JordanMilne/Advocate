@@ -1,6 +1,6 @@
 # coding=utf-8
 
-
+from __future__ import division
 
 import pickle
 import socket
@@ -138,12 +138,12 @@ class ValidateIPTests(unittest.TestCase):
             num_ips = bad_netblock.num_addresses
             # Don't test *every* IP in large netblocks
             step_size = int(min(max(num_ips / 255, 1), 128))
-            for ip_idx in range(0, num_ips, step_size):
+            for ip_idx in xrange(0, num_ips, step_size):
                 i += 1
                 bad_ip = bad_netblock[ip_idx]
                 bad_ip_allowed = validator.is_ip_allowed(bad_ip)
                 if bad_ip_allowed:
-                    print((i, bad_ip))
+                    print(i, bad_ip)
                 self.assertFalse(bad_ip_allowed)
 
     # TODO: something like the above for IPv6?
@@ -322,25 +322,25 @@ class HostnameTests(unittest.TestCase):
     def test_idn(self):
         # test some basic globs
         self.assertFalse(self._is_hostname_allowed(
-            "中国.icom.museum",
+            u"中国.icom.museum",
             hostname_blacklist={"*.museum"}
         ))
         # case insensitive, please
         self.assertFalse(self._is_hostname_allowed(
-            "中国.icom.muSeum",
+            u"中国.icom.muSeum",
             hostname_blacklist={"*.Museum"}
         ))
         self.assertFalse(self._is_hostname_allowed(
-            "中国.icom.museum",
+            u"中国.icom.museum",
             hostname_blacklist={"xn--fiqs8s.*.museum"}
         ))
         self.assertFalse(self._is_hostname_allowed(
             "xn--fiqs8s.icom.museum",
-            hostname_blacklist={"中国.*.museum"}
+            hostname_blacklist={u"中国.*.museum"}
         ))
         self.assertTrue(self._is_hostname_allowed(
-            "example.com",
-            hostname_blacklist={"中国.*.museum"}
+            u"example.com",
+            hostname_blacklist={u"中国.*.museum"}
         ))
 
     def test_missing_canonname(self):
@@ -366,8 +366,8 @@ class HostnameTests(unittest.TestCase):
         # possible null termination when checking if the hostname is allowed.
         self.assertFalse(vl.is_hostname_allowed("foo.baz.com\x00.example.com"))
         self.assertFalse(vl.is_hostname_allowed("foo.example.com\x00.baz.com"))
-        self.assertFalse(vl.is_hostname_allowed("foo.baz.com\x00.example.com"))
-        self.assertFalse(vl.is_hostname_allowed("foo.example.com\x00.baz.com"))
+        self.assertFalse(vl.is_hostname_allowed(u"foo.baz.com\x00.example.com"))
+        self.assertFalse(vl.is_hostname_allowed(u"foo.example.com\x00.baz.com"))
 
 
 class ConnectionPoolingTests(unittest.TestCase):
