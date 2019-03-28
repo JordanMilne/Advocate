@@ -13,16 +13,8 @@ env:
 install:
   - bash install_dev_requests.sh "$REQUESTS_VERSION"
   - python setup.py -q install
-stages:
-  - test
 
-jobs:
-  include:
-    - stage: test
-      name: Advocate Tests
-      script: bash .travis/test.sh
-    - name: Requests Compliance Tests
-      script: bash .travis/test_requests.sh
+script: bash .travis/all_tests.sh
 
 # Coverage metrics
 before_install:
