@@ -77,6 +77,7 @@ class AdvocateEnforcer(object):
     def monkeypatch_requests_module(self):
         """Temporarily replace explicit requests calls with calls to Advocate"""
         try:
+            assert not self._orig_module
             self._orig_module = sys.modules['requests']
             sys.modules['requests'] = self
             yield

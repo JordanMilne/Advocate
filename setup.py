@@ -5,7 +5,8 @@ from codecs import open
 from commands import PyTestRequestsCompliance, PyTest
 
 requires = [
-    'requests <3.0, >=2.4',
+    'requests <3.0, >=2.18.0',
+    'urllib3 <2.0, >=1.22',
     'six',
     "pyasn1",
     "pyopenssl",

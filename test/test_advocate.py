@@ -31,6 +31,17 @@ from advocate.futures import FuturesSession
 # on it.
 AddrValidator.DEFAULT_PORT_WHITELIST.add(1)
 
+RequestsAPIWrapper.SUPPORT_WRAPPER_PICKLING = True
+global_wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
+    ipaddress.ip_network("127.0.0.1"),
+}))
+RequestsAPIWrapper.SUPPORT_WRAPPER_PICKLING = False
+
+
+class _WrapperSubclass(global_wrapper.Session):
+    def good_method(self):
+        return "foo"
+
 
 def canonname_supported():
     """Check if the nameserver supports the AI_CANONNAME flag
@@ -472,10 +483,7 @@ class AdvocateWrapperTests(unittest.TestCase):
 
     def test_wrapper_session_pickle(self):
         # Make sure the validator still works after a pickle round-trip
-        wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
-            ipaddress.ip_network("127.0.0.1"),
-        }))
-        sess_instance = pickle.loads(pickle.dumps(wrapper.Session()))
+        sess_instance = pickle.loads(pickle.dumps(global_wrapper.Session()))
 
         with self.assertRaises(Exception) as cm:
             sess_instance.get("http://127.0.0.1:1/")
@@ -490,26 +498,26 @@ class AdvocateWrapperTests(unittest.TestCase):
 
     def test_wrapper_session_subclass(self):
         # Make sure pickle doesn't explode if we try to pickle a subclass
-        # of `wrapper.Session`
-        wrapper = RequestsAPIWrapper(validator=AddrValidator(ip_whitelist={
-            ipaddress.ip_network("127.0.0.1"),
-        }))
+        # of `global_wrapper.Session`
+        def _check_instance(instance):
+            self.assertEqual(instance.good_method(), "foo")
 
-        class _SessionThing(wrapper.Session):
-            pass
+            with self.assertRaises(Exception) as cm:
+                instance.get("http://127.0.0.1:1/")
+            self.assertRegexpMatches(
+                cm.exception.__class__.__name__,
+                r"\A(Connection|Protocol)Error",
+            )
+            self.assertRaises(
+                UnacceptableAddressException,
+                instance.get, "http://127.0.1.1:1/"
+            )
+        sess = _WrapperSubclass()
+        _check_instance(sess)
+        sess_unpickled = pickle.loads(pickle.dumps(sess))
+        _check_instance(sess_unpickled)
 
-        sess_instance = pickle.loads(pickle.dumps(_SessionThing()))
 
-        with self.assertRaises(Exception) as cm:
-            sess_instance.get("http://127.0.0.1:1/")
-        self.assertRegexpMatches(
-            cm.exception.__class__.__name__,
-            r"\A(Connection|Protocol)Error",
-        )
-        self.assertRaises(
-            UnacceptableAddressException,
-            sess_instance.get, "http://127.0.1.1:1/"
-        )
 
     @unittest.skipIf(
         not canonname_supported(),

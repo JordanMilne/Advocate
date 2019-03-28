@@ -3,41 +3,19 @@
 # method, so we need to ignore tests that use it.
 
 import pytest
-from _pytest.runner import TestReport
-from py._code.code import ExceptionInfo
 
 from advocate.exceptions import MountDisabledException, ProxyDisabledException
 
-SKIP_EXCEPTIONS = (pytest.skip.Exception, MountDisabledException, ProxyDisabledException)
+SKIP_EXCEPTIONS = (MountDisabledException, ProxyDisabledException)
 
 
 def pytest_runtest_makereport(item, call):
-    when = call.when
-    duration = call.stop - call.start
-    keywords = dict([(x, 1) for x in item.keywords])
-    excinfo = call.excinfo
-    sections = []
-    if not call.excinfo:
-        outcome = "passed"
-        longrepr = None
-    else:
-        if not isinstance(excinfo, ExceptionInfo):
-            outcome = "failed"
-            longrepr = excinfo
-        elif excinfo.errisinstance(SKIP_EXCEPTIONS):
-            outcome = "skipped"
-            r = excinfo._getreprcrash()
-            longrepr = (str(r.path), r.lineno, r.message)
-        else:
-            outcome = "failed"
-            if call.when == "call":
-                longrepr = item.repr_failure(excinfo)
-            # exception in setup or teardown
-            else:
-                longrepr = item._repr_failure_py(excinfo,
-                                                 style=item.config.option.tbstyle)
-    for rwhen, key, content in item._report_sections:
-        sections.append(("Captured %s %s" % (key, rwhen), content))
-    return TestReport(item.nodeid, item.location,
-                      keywords, outcome, longrepr, when,
-                      sections, duration)
+    from _pytest.runner import pytest_runtest_makereport as mr
+    report = mr(item, call)
+
+    if call.excinfo is not None:
+        if call.excinfo.type in SKIP_EXCEPTIONS:
+            report.outcome = 'skipped'
+            report.wasxfail = "reason: Advocate is not meant to support this"
+
+    return report

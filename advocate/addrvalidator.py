@@ -112,10 +112,8 @@ class AddrValidator(object):
                 if not ipaddress.ip_network(addr_ip).is_global:
                     return False
         elif addr_ip.version == 6:
-            # I'm erring towards disallowing IPv6 just because I don't have a
-            # good grasp on it, but disabling it by default is
-            # "bad for the internet" (tm)
-            # allow by default once I've gained confidence in it.
+            # You'd better have a good reason for enabling IPv6
+            # because Advocate's techniques don't work well without NAT.
             if not self.allow_ipv6:
                 return False
 

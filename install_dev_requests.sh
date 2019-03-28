@@ -7,6 +7,6 @@ pip uninstall -y requests
 git clone --branch "v${1}" --depth 1 "https://github.com/kennethreitz/requests.git" "requests-${1}"
 set -e
 pushd "requests-${1}"
-python setup.py develop
+pip install -e '.[security]'
 popd
 popd

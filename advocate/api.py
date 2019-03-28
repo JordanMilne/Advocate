@@ -12,6 +12,8 @@ itself.
 
 """
 from collections import OrderedDict
+import hashlib
+import pickle
 
 import requests
 
@@ -22,10 +24,11 @@ from .exceptions import MountDisabledException
 
 class Session(requests.Session):
     __attrs__ = requests.Session.__attrs__ + ["validator"]
+    DEFAULT_VALIDATOR = None
 
     """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
     def __init__(self, *args, **kwargs):
-        self.validator = kwargs.pop("validator", None)
+        self.validator = kwargs.pop("validator", self.DEFAULT_VALIDATOR)
         adapter_kwargs = kwargs.pop("_adapter_kwargs", {})
 
         # `Session.__init__()` calls `mount()` internally, so we need to allow
@@ -185,6 +188,8 @@ def delete(url, **kwargs):
 
 class RequestsAPIWrapper(object):
     """Provides a `requests.api`-like interface with a specific validator"""
+    SUPPORT_WRAPPER_PICKLING = False
+
     def __init__(self, validator):
         # Do this here to avoid circular import issues
         try:
@@ -203,19 +208,17 @@ class RequestsAPIWrapper(object):
             so people should be able to subclass `wrapper.Session` and still
             get the desired validation behaviour
             """
-            def __new__(cls, *args, **kwargs):
-                kwargs.setdefault("validator", outer_self.validator)
-                # Dynamically created classes like this are a pain to pickle,
-                # instantiate a base `Session` instead.
-                return Session(*args, **kwargs)
+            DEFAULT_VALIDATOR = outer_self.validator
+
+        self._make_wrapper_cls_global(_WrappedSession)
 
         if have_requests_futures:
 
             class _WrappedFuturesSession(FuturesSession):
                 """Like _WrappedSession, but for `FuturesSession`s"""
-                def __new__(cls, *args, **kwargs):
-                    kwargs.setdefault("validator", outer_self.validator)
-                    return FuturesSession(*args, **kwargs)
+                DEFAULT_VALIDATOR = outer_self.validator
+            self._make_wrapper_cls_global(_WrappedFuturesSession)
+
             self.FuturesSession = _WrappedFuturesSession
 
         self.request = self._default_arg_wrapper(request)
@@ -243,3 +246,14 @@ class RequestsAPIWrapper(object):
             kwargs.setdefault("validator", self.validator)
             return fun(*args, **kwargs)
         return wrapped_func
+
+    def _make_wrapper_cls_global(self, cls):
+        if not self.SUPPORT_WRAPPER_PICKLING:
+            return
+        # Gnarly, but necessary to give pickle a consistent module-level
+        # reference for each wrapper.
+        wrapper_hash = hashlib.sha256(pickle.dumps(self)).hexdigest()
+        cls.__name__ = "_".join((cls.__name__, wrapper_hash))
+        cls.__qualname__ = ".".join((__name__, cls.__name__))
+        if not globals().get(cls.__name__):
+            globals()[cls.__name__] = cls

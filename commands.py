@@ -68,9 +68,11 @@ class PyTestRequestsCompliance(TestCommand):
                     ipaddress.ip_network("127.0.1.1"),
                     ipaddress.ip_network("10.255.255.1"),
                 },
-                # the `httpbin` fixture uses a random fixture, we need to allow all ports
+                # the `httpbin` fixture uses a random port, we need to allow all ports
                 port_whitelist=set(range(0, 65535)),
             )
+            # requests' tests rely on being able to pickle a `Session`
+            advocate.RequestsAPIWrapper.SUPPORT_WRAPPER_PICKLING = True
             enforcer = AdvocateEnforcer(validator)
             with enforcer.monkeypatch_requests_module():
                 socket.socket = CheckedSocket

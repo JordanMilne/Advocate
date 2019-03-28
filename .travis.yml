@@ -4,31 +4,15 @@ cache: false
 
 python:
   - "2.7"
-  - "3.5"
-  - "pypy"
+  - "3.6"
 env:
-  - REQUESTS_VERSION="2.13.0"
-  - REQUESTS_VERSION="2.11.1"
-  - REQUESTS_VERSION="2.9.2"
-  - REQUESTS_VERSION="2.5.3"
+  - REQUESTS_VERSION="2.18.4"
+  - REQUESTS_VERSION="2.19.1"
+  - REQUESTS_VERSION="2.20.1"
+  - REQUESTS_VERSION="2.21.0"
 install:
-  # Try to install a newer PyPy, travis-ci.org's is ancient
-  - |
-      if [ "$TRAVIS_PYTHON_VERSION" = "pypy" ]; then
-        export PYENV_ROOT="$HOME/.pyenv"
-        if [ -f "$PYENV_ROOT/bin/pyenv" ]; then
-          pushd "$PYENV_ROOT" && git pull && popd
-        else
-          rm -rf "$PYENV_ROOT" && git clone --depth 1 https://github.com/yyuu/pyenv.git "$PYENV_ROOT"
-        fi
-        export PYPY_VERSION="4.0.1"
-        "$PYENV_ROOT/bin/pyenv" install --skip-existing "pypy-$PYPY_VERSION"
-        virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
-        source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
-      fi
   - bash install_dev_requests.sh "$REQUESTS_VERSION"
   - python setup.py -q install
-  - pip install -r requirements-test.txt
 script: bash .travis/test.sh
 
 # Coverage metrics

@@ -1,42 +1,44 @@
-from requests.packages.urllib3 import ProxyManager, PoolManager
-from requests.packages.urllib3.poolmanager import SSL_KEYWORDS
+import collections
+import functools
+
+from urllib3 import PoolManager
+from urllib3.poolmanager import _default_key_normalizer, PoolKey
 
 from .connectionpool import (
     ValidatingHTTPSConnectionPool,
     ValidatingHTTPConnectionPool,
 )
 
-POOL_CLASSES_BY_SCHEME = {
+pool_classes_by_scheme = {
     "http": ValidatingHTTPConnectionPool,
     "https": ValidatingHTTPSConnectionPool,
 }
 
-
-def _validating_new_pool(self, scheme, host, port):
-    """
-    Create a new :class:`ConnectionPool` based on host, port and scheme.
-
-    This method is used to actually create the connection pools handed out
-    by :meth:`connection_from_url` and companion methods. It is intended
-    to be overridden for customization.
-    """
-    # XXX: in urllib3 this uses the module-level `pool_classes_by_scheme` :(
-    # maybe submit a patch upstream to use a class attr instead so we don't
-    # have to dupe the whole method to use different connection pools?
-    pool_cls = self.POOL_CLASSES_BY_SCHEME[scheme]
-    kwargs = self.connection_pool_kw
-    if scheme == 'http':
-        kwargs = self.connection_pool_kw.copy()
-        for kw in SSL_KEYWORDS:
-            kwargs.pop(kw, None)
-
-    return pool_cls(host, port, **kwargs)
+AdvocatePoolKey = collections.namedtuple('AdvocatePoolKey',
+                                         PoolKey._fields + ('key_validator',))
 
 
-# Don't silently break if the private API changes across urllib3 versions
-assert(hasattr(PoolManager, '_new_pool'))
+def key_normalizer(key_class, request_context):
+    request_context = request_context.copy()
+    # TODO: add ability to serialize validator rules to dict,
+    # allowing pool to be shared between sessions with the same
+    # rules.
+    request_context["validator"] = id(request_context["validator"])
+    return _default_key_normalizer(key_class, request_context)
+
+
+key_fn_by_scheme = {
+    'http': functools.partial(key_normalizer, AdvocatePoolKey),
+    'https': functools.partial(key_normalizer, AdvocatePoolKey),
+}
 
 
 class ValidatingPoolManager(PoolManager):
-    POOL_CLASSES_BY_SCHEME = POOL_CLASSES_BY_SCHEME.copy()
-    _new_pool = _validating_new_pool
+    def __init__(self, *args, **kwargs):
+        super(ValidatingPoolManager, self).__init__(*args, **kwargs)
+
+        # Make sure the API hasn't changed
+        assert (hasattr(self, 'pool_classes_by_scheme'))
+
+        self.pool_classes_by_scheme = pool_classes_by_scheme
+        self.key_fn_by_scheme = key_fn_by_scheme.copy()
