@@ -2,8 +2,6 @@ import re
 import setuptools
 from codecs import open
 
-from commands import PyTestRequestsCompliance, PyTest
-
 requires = [
     'requests <3.0, >=2.18.0',
     'urllib3 <2.0, >=1.22',
@@ -44,18 +42,10 @@ setuptools.setup(
         "requests-mock",
         "flake8"
     ],
-    cmdclass={
-        'test': PyTest,
-        'requests_test': PyTestRequestsCompliance,
-    },
-    setup_requires=[
-        'pytest-runner',
-    ],
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',
     author='Jordan Milne',
     author_email='advocate@saynotolinux.com',
-    test_suite='test_advocate',
     keywords="http requests security ssrf proxy rebinding advocate",
     description=('A wrapper around the requests library for safely '
                  'making HTTP requests on behalf of a third party'),

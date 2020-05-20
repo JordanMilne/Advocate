@@ -5,16 +5,21 @@ cache: false
 python:
   - "2.7"
   - "3.6"
+  - "3.7"
+  - "3.8"
 env:
   - REQUESTS_VERSION="2.18.4"
   - REQUESTS_VERSION="2.19.1"
   - REQUESTS_VERSION="2.20.1"
   - REQUESTS_VERSION="2.21.0"
+  - REQUESTS_VERSION="2.22.0"
+  - REQUESTS_VERSION="2.23.0"
 install:
-  - bash install_dev_requests.sh "$REQUESTS_VERSION"
-  - python setup.py -q install
+  - pip install -e git+https://github.com/psf/requests@${REQUESTS_VERSION}#egg=requests -r requirements-test.txt
 
-script: bash .travis/all_tests.sh
+script:
+  - python -m pytest --cov=advocate --cov-config=.coveragerc
+  - python -m pytest -p requests_pytest_plugin src/requests
 
 # Coverage metrics
 before_install:
