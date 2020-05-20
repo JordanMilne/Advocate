@@ -9,17 +9,6 @@ from requests.exceptions import (
 )
 
 from .adapters import ValidatingHTTPAdapter
-from .api import (
-    request,
-    get,
-    post,
-    head,
-    options,
-    put,
-    patch,
-    delete,
-    RequestsAPIWrapper,
-    Session,
-)
+from .api import *
 from .addrvalidator import AddrValidator
 from .exceptions import UnacceptableAddressException

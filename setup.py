@@ -2,8 +2,6 @@ import re
 import setuptools
 from codecs import open
 
-from commands import PyTestRequestsCompliance, PyTest
-
 requires = [
     'requests <3.0, >=2.18.0',
     'urllib3 <2.0, >=1.22',
@@ -35,27 +33,16 @@ setuptools.setup(
     packages=packages,
     install_requires=requires,
     tests_require=[
-        "httpbin",
         "mock",
         "pytest",
         "pytest-cov",
-        "pytest-httpbin",
         "requests-futures",
         "requests-mock",
-        "flake8"
-    ],
-    cmdclass={
-        'test': PyTest,
-        'requests_test': PyTestRequestsCompliance,
-    },
-    setup_requires=[
-        'pytest-runner',
     ],
     url='https://github.com/JordanMilne/Advocate',
     license='Apache 2',
     author='Jordan Milne',
     author_email='advocate@saynotolinux.com',
-    test_suite='test_advocate',
     keywords="http requests security ssrf proxy rebinding advocate",
     description=('A wrapper around the requests library for safely '
                  'making HTTP requests on behalf of a third party'),
@@ -67,9 +54,9 @@ setuptools.setup(
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Security',
         'Topic :: Internet :: WWW/HTTP',
     ],

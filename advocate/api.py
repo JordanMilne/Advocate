@@ -15,15 +15,15 @@ from collections import OrderedDict
 import hashlib
 import pickle
 
-import requests
+from requests import Session as RequestsSession
 
 import advocate
 from .adapters import ValidatingHTTPAdapter
 from .exceptions import MountDisabledException
 
 
-class Session(requests.Session):
-    __attrs__ = requests.Session.__attrs__ + ["validator"]
+class Session(RequestsSession):
+    __attrs__ = RequestsSession.__attrs__ + ["validator"]
     DEFAULT_VALIDATOR = None
 
     """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
@@ -34,7 +34,7 @@ class Session(requests.Session):
         # `Session.__init__()` calls `mount()` internally, so we need to allow
         # it temporarily
         self.__mountAllowed = True
-        requests.Session.__init__(self, *args, **kwargs)
+        RequestsSession.__init__(self, *args, **kwargs)
 
         # Drop any existing adapters
         self.adapters = OrderedDict()
@@ -257,3 +257,17 @@ class RequestsAPIWrapper(object):
         cls.__qualname__ = ".".join((__name__, cls.__name__))
         if not globals().get(cls.__name__):
             globals()[cls.__name__] = cls
+
+
+__all__ = (
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "put",
+    "request",
+    "session",
+    "Session",
+)

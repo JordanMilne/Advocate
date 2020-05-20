@@ -16,7 +16,8 @@ import requests
 import requests_mock
 
 import advocate
-from advocate import AddrValidator, RequestsAPIWrapper
+from advocate import AddrValidator
+from advocate.api import RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
     MountDisabledException,
