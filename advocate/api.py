@@ -188,6 +188,10 @@ def delete(url, **kwargs):
 
 class RequestsAPIWrapper(object):
     """Provides a `requests.api`-like interface with a specific validator"""
+
+    # Due to how the classes are dynamically constructed pickling may not work
+    # correctly unless loaded within the same interpreter instance.
+    # Enable at your peril.
     SUPPORT_WRAPPER_PICKLING = False
 
     def __init__(self, validator):
@@ -270,4 +274,5 @@ __all__ = (
     "request",
     "session",
     "Session",
+    "RequestsAPIWrapper",
 )
