@@ -19,7 +19,7 @@ install:
 
 script:
   - pytest --cov=advocate --cov-config=.coveragerc
-  - cd build/requests && PYTHONPATH=$TRAVIS_BUILD_DIR pytest -p requests_pytest_plugin
+  - pushd build/requests && PYTHONPATH=$TRAVIS_BUILD_DIR pytest -p requests_pytest_plugin && popd
 
 # Coverage metrics
 before_install:
