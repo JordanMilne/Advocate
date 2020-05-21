@@ -14,9 +14,11 @@ socket.socket = CheckedSocket
 from mock import patch
 import requests
 import requests_mock
+import six.moves
 
 import advocate
 from advocate import AddrValidator
+from advocate.addrvalidator import canonicalize_hostname
 from advocate.api import RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
@@ -150,7 +152,7 @@ class ValidateIPTests(unittest.TestCase):
             num_ips = bad_netblock.num_addresses
             # Don't test *every* IP in large netblocks
             step_size = int(min(max(num_ips / 255, 1), 128))
-            for ip_idx in xrange(0, num_ips, step_size):
+            for ip_idx in six.moves.range(0, num_ips, step_size):
                 i += 1
                 bad_ip = bad_netblock[ip_idx]
                 bad_ip_allowed = validator.is_ip_allowed(bad_ip)
@@ -321,9 +323,13 @@ class HostnameTests(unittest.TestCase):
     def setUp(self):
         self._canonname_supported = canonname_supported()
 
-    def _is_hostname_allowed(self, host, **kwargs):
+    def _is_hostname_allowed(self, host, fake_lookup=False, **kwargs):
         validator = permissive_validator(**kwargs)
-        for res in advocate_getaddrinfo(host, 80, get_canonname=True):
+        if fake_lookup:
+            results = [(2, 1, 6, canonicalize_hostname(host).encode("utf8"), ('1.2.3.4', 80))]
+        else:
+            results = advocate_getaddrinfo(host, 80, get_canonname=True)
+        for res in results:
             if validator.is_addrinfo_allowed(res):
                 return True
         return False
@@ -334,25 +340,40 @@ class HostnameTests(unittest.TestCase):
     def test_idn(self):
         # test some basic globs
         self.assertFalse(self._is_hostname_allowed(
-            u"中国.icom.museum",
-            hostname_blacklist={"*.museum"}
+            u"中国.example.org",
+            fake_lookup=True,
+            hostname_blacklist={"*.org"}
         ))
         # case insensitive, please
         self.assertFalse(self._is_hostname_allowed(
-            u"中国.icom.muSeum",
-            hostname_blacklist={"*.Museum"}
+            u"中国.example.oRg",
+            fake_lookup=True,
+            hostname_blacklist={"*.Org"}
         ))
         self.assertFalse(self._is_hostname_allowed(
-            u"中国.icom.museum",
-            hostname_blacklist={"xn--fiqs8s.*.museum"}
+            u"中国.example.org",
+            fake_lookup=True,
+            hostname_blacklist={"xn--fiqs8s.*.org"}
         ))
         self.assertFalse(self._is_hostname_allowed(
-            "xn--fiqs8s.icom.museum",
-            hostname_blacklist={u"中国.*.museum"}
+            "xn--fiqs8s.example.org",
+            fake_lookup=True,
+            hostname_blacklist={u"中国.*.org"}
+        ))
+        self.assertTrue(self._is_hostname_allowed(
+            u"example.org",
+            fake_lookup=True,
+            hostname_blacklist={u"中国.*.org"}
         ))
         self.assertTrue(self._is_hostname_allowed(
             u"example.com",
-            hostname_blacklist={u"中国.*.museum"}
+            fake_lookup=True,
+            hostname_blacklist={u"中国.*.org"}
+        ))
+        self.assertTrue(self._is_hostname_allowed(
+            u"foo.example.org",
+            fake_lookup=True,
+            hostname_blacklist={u"中国.*.org"}
         ))
 
     def test_missing_canonname(self):
