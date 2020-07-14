@@ -1,3 +1,0 @@
-* Proper proxy support
-* Audit IPv6 support
-* Figure out what to do about the ipaddress package on pypy3
