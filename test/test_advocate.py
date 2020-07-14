@@ -454,6 +454,8 @@ class AdvocateWrapperTests(unittest.TestCase):
             validator=AddrValidator(hostname_blacklist={"google.com"})
         )
 
+    # Disabled for now because the redirection endpoint appears to be broken.
+    @unittest.skip
     def test_redirect(self):
         # Make sure httpbin even works
         test_url = "http://httpbin.org/status/204"
