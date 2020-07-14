@@ -33,6 +33,6 @@ raven==6.10.0
 requests-futures==1.0.0
 requests-mock==1.8.0
 six==1.14.0
-urllib3==1.22
+urllib3==1.24.2
 werkzeug==1.0.1
 zipp==1.2.0
