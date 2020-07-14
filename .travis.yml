@@ -14,6 +14,7 @@ env:
   - REQUESTS_VERSION="2.21.0"
   - REQUESTS_VERSION="2.22.0"
   - REQUESTS_VERSION="2.23.0"
+  - REQUESTS_VERSION="2.24.0"
 install:
   - pip install --src build/ -e git+https://github.com/psf/requests@v${REQUESTS_VERSION}#egg=requests -r requirements-test.txt
 
