@@ -10,12 +10,11 @@ requires = [
     "pyopenssl",
     "ndg-httpsclient",
     'netifaces>=0.10.5',
+    'ipaddress==1.0.16'
 ]
 
 packages = [
-    "advocate",
-    "advocate.packages",
-    "advocate.packages.ipaddress"
+    "advocate"
 ]
 
 version = ''

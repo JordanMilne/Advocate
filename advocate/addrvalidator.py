@@ -1,12 +1,12 @@
 import functools
 import fnmatch
+import ipaddress
 import re
 import six
 
 import netifaces
 
 from .exceptions import NameserverException
-from .packages import ipaddress
 
 
 def canonicalize_hostname(hostname):

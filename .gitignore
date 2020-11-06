@@ -10,6 +10,7 @@
 *.egg-info
 .eggs
 .coverage
+.vim
 /build
 /dist
 /dev_packages
