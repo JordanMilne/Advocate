@@ -2,6 +2,7 @@
 
 from __future__ import division
 
+import ipaddress
 import pickle
 import socket
 import unittest
@@ -26,7 +27,6 @@ from advocate.exceptions import (
     NameserverException,
     UnacceptableAddressException,
 )
-from advocate.packages import ipaddress
 from advocate.futures import FuturesSession
 
 

@@ -1,3 +1,4 @@
+import ipaddress
 import socket
 from socket import timeout as SocketTimeout
 
@@ -8,7 +9,6 @@ from requests.packages.urllib3.util.connection import create_connection as old_c
 
 from . import addrvalidator
 from .exceptions import UnacceptableAddressException
-from .packages import ipaddress
 
 
 def advocate_getaddrinfo(host, port, get_canonname=False):

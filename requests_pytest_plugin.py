@@ -1,6 +1,7 @@
 import socket
 
 import doctest
+import ipaddress
 import pytest
 import requests
 
@@ -8,7 +9,6 @@ import advocate
 import advocate.api
 
 from advocate.exceptions import MountDisabledException, ProxyDisabledException
-from advocate.packages import ipaddress
 from test.monkeypatching import CheckedSocket
 
 
