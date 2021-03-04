@@ -70,7 +70,7 @@ define a wrapper in a common file and import it instead of advocate:
 .. code-block:: python
 
     >>> from advocate import AddrValidator, RequestsAPIWrapper
-    >>> from advocate.packages import ipaddress
+    >>> import ipaddress
     >>> dougs_advocate = RequestsAPIWrapper(AddrValidator(ip_blacklist={
     ...     # Contains data incomprehensible to mere mortals
     ...     ipaddress.ip_network("42.42.42.42/32")
