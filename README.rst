@@ -4,10 +4,6 @@
 Advocate
 ========
 
-.. image:: https://travis-ci.org/JordanMilne/Advocate.svg?branch=master
-    :target: https://travis-ci.org/JordanMilne/Advocate/
-.. image:: https://codecov.io/github/JordanMilne/Advocate/coverage.svg?branch=master
-    :target: https://codecov.io/github/JordanMilne/Advocate
 .. image:: https://img.shields.io/pypi/pyversions/advocate.svg
 .. image:: https://img.shields.io/pypi/v/advocate.svg
     :target: https://pypi.python.org/pypi/advocate
@@ -26,7 +22,7 @@ Installation
 
     pip install advocate
 
-Advocate is officially supported on CPython 2.7+, CPython 3.4+ and PyPy 2. PyPy 3 may work as well, but 
+Advocate is officially supported on CPython 2.7+, CPython 3.4+ and PyPy 2. PyPy 3 may work as well, but
 you'll need a copy of the ipaddress module from elsewhere.
 
 Examples

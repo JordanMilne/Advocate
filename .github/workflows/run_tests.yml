@@ -1,0 +1,42 @@
+name: Tests
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["3.7", "3.9"]
+        os: [ubuntu-20.04]
+        requests_version: ["2.18.4", "2.19.1", "2.23.0", "2.28.1"]
+        include:
+          - requests_version: "2.18.4"
+            urllib3_version: "1.22"
+          - requests_version: "2.19.1"
+            urllib3_version: "1.22"
+          - requests_version: "2.23.0"
+            urllib3_version: "1.22"
+          # Make sure we're testing with an up-to-date urllib3 version, that can affect
+          # whether our hooks will work as well!
+          - requests_version: "2.28.1"
+            urllib3_version: "1.26.11"
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install "urllib3==${{matrix.urllib3_version}}"
+        mkdir build
+        pip install --src build/ -e git+https://github.com/psf/requests@v${{matrix.requests_version}}#egg=requests -r requirements-test.txt
+    - name: Run tests
+      run: |
+        export ADVOCATE_BUILD_DIR=$(pwd)
+        export WANTED_REQUESTS_VERSION="${{matrix.requests_version}}"
+        export WANTED_URLLIB3_VERSION="${{matrix.urllib3_version}}"
+        pytest --cov=advocate --cov-config=.coveragerc
+        pushd build/requests && PYTHONPATH="${ADVOCATE_BUILD_DIR}" pytest -p requests_pytest_plugin && popd

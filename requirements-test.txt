@@ -27,13 +27,13 @@ pyOpenSSL==19.1.0
 pysocks==1.7.1
 pytest==3.10.1
 pytest-cov==2.8.1
-pytest-httpbin==0.3.0
+pytest-httpbin==1.0.2
 pytest-mock==2.0.0
 raven==6.10.0
 requests-futures==1.0.0
 requests-mock==1.8.0
 six==1.14.0
-urllib3==1.22
 werkzeug==1.0.1
 zipp==1.2.0
 py2-ipaddress==3.4.2; python_version < '3.3'
+trustme
