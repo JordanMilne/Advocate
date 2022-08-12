@@ -22,8 +22,7 @@ Installation
 
     pip install advocate
 
-Advocate is officially supported on CPython 2.7+, CPython 3.4+ and PyPy 2. PyPy 3 may work as well, but
-you'll need a copy of the ipaddress module from elsewhere.
+Advocate is officially supported on CPython 3.6+. PyPy 3 may work as well, but is not tested.
 
 Examples
 ========

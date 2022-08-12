@@ -2,7 +2,6 @@ import functools
 import fnmatch
 import ipaddress
 import re
-import six
 
 import netifaces
 
@@ -15,7 +14,7 @@ def canonicalize_hostname(hostname):
     # lowercase the *ASCII* chars.
     # TODO: The differences between IDNA2003 and IDNA2008 might be relevant
     # to us, but both specs are damn confusing.
-    return six.text_type(hostname.encode("idna").lower(), 'utf-8')
+    return str(hostname.encode("idna").lower(), 'utf-8')
 
 
 def determine_local_addresses():
@@ -180,7 +179,7 @@ class AddrValidator(object):
         # not escaping their periods unless they specifically pass in an RE.
         # This has the added benefit of letting us sanely handle globbed
         # IDNs by default.
-        if isinstance(pattern, six.string_types):
+        if isinstance(pattern, str):
             # convert the glob to a punycode glob, then a regex
             pattern = fnmatch.translate(canonicalize_hostname(pattern))
 

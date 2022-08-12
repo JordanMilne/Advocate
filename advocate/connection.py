@@ -2,10 +2,10 @@ import ipaddress
 import socket
 from socket import timeout as SocketTimeout
 
-from requests.packages.urllib3.connection import HTTPSConnection, HTTPConnection
-from requests.packages.urllib3.exceptions import ConnectTimeoutError
-from requests.packages.urllib3.util.connection import _set_socket_options
-from requests.packages.urllib3.util.connection import create_connection as old_create_connection
+from urllib3.connection import HTTPSConnection, HTTPConnection
+from urllib3.exceptions import ConnectTimeoutError
+from urllib3.util.connection import _set_socket_options
+from urllib3.util.connection import create_connection as old_create_connection
 
 from . import addrvalidator
 from .exceptions import UnacceptableAddressException

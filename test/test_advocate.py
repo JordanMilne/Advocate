@@ -1,5 +1,3 @@
-# coding=utf-8
-
 from __future__ import division
 
 import ipaddress
@@ -15,7 +13,6 @@ socket.socket = CheckedSocket
 from mock import patch
 import requests
 import requests_mock
-import six.moves
 
 import advocate
 from advocate import AddrValidator
@@ -152,7 +149,7 @@ class ValidateIPTests(unittest.TestCase):
             num_ips = bad_netblock.num_addresses
             # Don't test *every* IP in large netblocks
             step_size = int(min(max(num_ips / 255, 1), 128))
-            for ip_idx in six.moves.range(0, num_ips, step_size):
+            for ip_idx in range(0, num_ips, step_size):
                 i += 1
                 bad_ip = bad_netblock[ip_idx]
                 bad_ip_allowed = validator.is_ip_allowed(bad_ip)

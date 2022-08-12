@@ -5,12 +5,7 @@ from codecs import open
 requires = [
     'requests <3.0, >=2.18.0',
     'urllib3 <2.0, >=1.22',
-    'six',
-    "pyasn1",
-    "pyopenssl",
-    "ndg-httpsclient",
     'netifaces>=0.10.5',
-    "py2-ipaddress==3.4.2; python_version < '3.3'"
 ]
 
 packages = [
@@ -52,10 +47,11 @@ setuptools.setup(
         'Natural Language :: English',
         'License :: OSI Approved :: Apache Software License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         'Topic :: Security',
         'Topic :: Internet :: WWW/HTTP',
     ],
