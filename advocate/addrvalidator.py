@@ -3,9 +3,14 @@ import fnmatch
 import ipaddress
 import re
 
-import netifaces
+try:
+    import netifaces
+    HAVE_NETIFACES = True
+except ImportError:
+    netifaces = None
+    HAVE_NETIFACES = False
 
-from .exceptions import NameserverException
+from .exceptions import NameserverException, ConfigException
 
 
 def canonicalize_hostname(hostname):
@@ -19,6 +24,9 @@ def canonicalize_hostname(hostname):
 
 def determine_local_addresses():
     """Get all IPs that refer to this machine according to netifaces"""
+    if not HAVE_NETIFACES:
+        raise ConfigException("Tried to determine local addresses, "
+                              "but netifaces module was not importable")
     ips = []
     for interface in netifaces.interfaces():
         if_families = netifaces.ifaddresses(interface)
@@ -68,6 +76,8 @@ class AddrValidator:
             allow_teredo=False,
             allow_6to4=False,
             allow_dns64=False,
+            # Must be explicitly set to "False" if you don't want to try
+            # detecting local interface addresses with netifaces.
             autodetect_local_addresses=True,
     ):
         if not port_blacklist and not port_whitelist:

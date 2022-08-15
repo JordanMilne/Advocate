@@ -20,6 +20,7 @@ from advocate.addrvalidator import canonicalize_hostname
 from advocate.api import RequestsAPIWrapper
 from advocate.connection import advocate_getaddrinfo
 from advocate.exceptions import (
+    ConfigException,
     MountDisabledException,
     NameserverException,
     UnacceptableAddressException,
@@ -311,6 +312,25 @@ class AddrInfoTests(unittest.TestCase):
         ))
         mock_determine_local_addresses.assert_not_called()
 
+    def test_netifaces_presence_optional(self):
+        # Advocate should still work without netifaces, but only if you've specifically
+        # said you don't care about checking against local interface addresses.
+        with patch("advocate.addrvalidator.HAVE_NETIFACES", False):
+            with self.assertRaises(ConfigException):
+                self._is_addrinfo_allowed("200.1.1.1", 80, autodetect_local_addresses=True)
+            with self.assertRaises(ConfigException):
+                advocate.addrvalidator.determine_local_addresses()
+            # Should be fine if you specifically asked to not look at the local addrs
+            self.assertTrue(self._is_addrinfo_allowed(
+                "200.1.1.1",
+                80,
+                autodetect_local_addresses=False,
+            ))
+
+        # These shouldn't `raise`
+        self._is_addrinfo_allowed("200.1.1.1", 80, autodetect_local_addresses=True)
+        advocate.addrvalidator.determine_local_addresses()
+
 
 @unittest.skipIf(
     not canonname_supported(),
@@ -341,7 +361,7 @@ class HostnameTests(unittest.TestCase):
             fake_lookup=True,
             hostname_blacklist={"*.org"}
         ))
-        # case insensitive, please
+        # case-insensitive, please
         self.assertFalse(self._is_hostname_allowed(
             u"中国.example.oRg",
             fake_lookup=True,

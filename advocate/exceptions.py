@@ -16,3 +16,7 @@ class MountDisabledException(AdvocateException):
 
 class ProxyDisabledException(NotImplementedError, AdvocateException):
     pass
+
+
+class ConfigException(AdvocateException):
+    pass
