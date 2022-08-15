@@ -31,7 +31,7 @@ class Session(RequestsSession):
     """
 
     def __init__(self, *args, **kwargs):
-        self.validator = kwargs.pop("validator", self.DEFAULT_VALIDATOR)
+        self.validator = kwargs.pop("validator", None) or self.DEFAULT_VALIDATOR
         adapter_kwargs = kwargs.pop("_adapter_kwargs", {})
 
         # `Session.__init__()` calls `mount()` internally, so we need to allow

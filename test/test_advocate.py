@@ -523,6 +523,12 @@ class AdvocateWrapperTests(unittest.TestCase):
             wrapper.get, "https://localhost:1/"
         )
 
+    def test_advocate_default_validator_replaceable(self):
+        new_validator = AddrValidator(hostname_blacklist=["example.org"])
+        with patch("advocate.api.Session.DEFAULT_VALIDATOR", new_validator):
+            with self.assertRaises(UnacceptableAddressException):
+                advocate.get("http://example.org")
+
     def test_wrapper_session_pickle(self):
         # Make sure the validator still works after a pickle round-trip
         sess_instance = pickle.loads(pickle.dumps(global_wrapper.Session()))
