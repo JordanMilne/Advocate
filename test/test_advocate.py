@@ -411,6 +411,7 @@ class ConnectionPoolingTests(unittest.TestCase):
         with CheckedSocket.bypass_checks():
             # HTTPBin supports `keep-alive`, so it's a good test subject
             requests.get("http://httpbin.org/")
+        mock_new_conn.assert_not_called()
         try:
             advocate.get("http://httpbin.org/")
         except:
