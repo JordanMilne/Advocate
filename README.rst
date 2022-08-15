@@ -212,7 +212,6 @@ If you can think of any improvements to the IPv6 handling, please submit an issu
 Caveats
 =======
 
-* This is beta-quality software, the API might change without warning!
 * :python:`mount()` ing other adapters is disallowed to prevent Advocate's validating adapters from being clobbered.
 * Advocate does not, and might never support the use of HTTP proxies.
 * Proper IPv6 support is still a WIP as noted above.

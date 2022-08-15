@@ -42,7 +42,7 @@ setuptools.setup(
                  'making HTTP requests on behalf of a third party'),
     long_description=readme,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Natural Language :: English',
         'License :: OSI Approved :: Apache Software License',
