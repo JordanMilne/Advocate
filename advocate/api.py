@@ -21,17 +21,22 @@ from .exceptions import MountDisabledException
 
 
 class Session(RequestsSession):
+    """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
+
     __attrs__ = RequestsSession.__attrs__ + ["validator"]
     DEFAULT_VALIDATOR = None
+    """
+    User-replaceable default validator to use for all Advocate sessions,
+    includes sessions created by advocate.get()
+    """
 
-    """Convenience wrapper around `requests.Session` set up for `advocate`ing"""
     def __init__(self, *args, **kwargs):
         self.validator = kwargs.pop("validator", self.DEFAULT_VALIDATOR)
         adapter_kwargs = kwargs.pop("_adapter_kwargs", {})
 
         # `Session.__init__()` calls `mount()` internally, so we need to allow
         # it temporarily
-        self.__mountAllowed = True
+        self.__mount_allowed = True
         RequestsSession.__init__(self, *args, **kwargs)
 
         # Drop any existing adapters
@@ -39,11 +44,11 @@ class Session(RequestsSession):
 
         self.mount("http://", ValidatingHTTPAdapter(validator=self.validator, **adapter_kwargs))
         self.mount("https://", ValidatingHTTPAdapter(validator=self.validator, **adapter_kwargs))
-        self.__mountAllowed = False
+        self.__mount_allowed = False
 
     def mount(self, *args, **kwargs):
         """Wrapper around `mount()` to prevent a protection bypass"""
-        if self.__mountAllowed:
+        if self.__mount_allowed:
             super(Session, self).mount(*args, **kwargs)
         else:
             raise MountDisabledException(
@@ -184,7 +189,7 @@ def delete(url, **kwargs):
     return request('delete', url, **kwargs)
 
 
-class RequestsAPIWrapper(object):
+class RequestsAPIWrapper:
     """Provides a `requests.api`-like interface with a specific validator"""
 
     # Due to how the classes are dynamically constructed pickling may not work

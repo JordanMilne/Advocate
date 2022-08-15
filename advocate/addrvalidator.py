@@ -50,7 +50,7 @@ def add_local_address_arg(func):
     return wrapper
 
 
-class AddrValidator(object):
+class AddrValidator:
     _6TO4_RELAY_NET = ipaddress.ip_network("192.88.99.0/24")
     # Just the well known prefix, DNS64 servers can set their own
     # prefix, but in practice most probably don't.
