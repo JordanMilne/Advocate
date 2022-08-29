@@ -33,7 +33,7 @@ Advocate is more-or-less a drop-in replacement for requests. In most cases you c
 .. code-block:: python
 
     >>> import advocate
-    >>> print advocate.get("http://google.com/")
+    >>> print(advocate.get("http://google.com/"))
     <Response [200]>
 
 Advocate also provides a subclassed :python:`requests.Session` with sane defaults for
@@ -43,9 +43,9 @@ validation already set up:
 
     >>> import advocate
     >>> sess = advocate.Session()
-    >>> print sess.get("http://google.com/")
+    >>> print(sess.get("http://google.com/"))
     <Response [200]>
-    >>> print sess.get("http://localhost/")
+    >>> print(sess.get("http://localhost/"))
     advocate.exceptions.UnacceptableAddressException: ('localhost', 80)
 
 All of the wrapped request functions accept a :python:`validator` kwarg where you
@@ -55,7 +55,7 @@ can set additional rules:
 
     >>> import advocate
     >>> validator = advocate.AddrValidator(hostname_blacklist={"*.museum",})
-    >>> print advocate.get("http://educational.MUSEUM/", validator=validator)
+    >>> print(advocate.get("http://educational.MUSEUM/", validator=validator))
     advocate.exceptions.UnacceptableAddressException: educational.MUSEUM
 
 If you require more advanced rules than the defaults, but don't want to have to pass
@@ -70,7 +70,7 @@ define a wrapper in a common file and import it instead of advocate:
     ...     # Contains data incomprehensible to mere mortals
     ...     ipaddress.ip_network("42.42.42.42/32")
     ... }))
-    >>> print dougs_advocate.get("http://42.42.42.42/")
+    >>> print(dougs_advocate.get("http://42.42.42.42/"))
     advocate.exceptions.UnacceptableAddressException: ('42.42.42.42', 80)
 
 
