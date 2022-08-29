@@ -35,7 +35,7 @@ key_fn_by_scheme = {
 
 class ValidatingPoolManager(PoolManager):
     def __init__(self, *args, **kwargs):
-        super(ValidatingPoolManager, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # Make sure the API hasn't changed
         assert (hasattr(self, 'pool_classes_by_scheme'))

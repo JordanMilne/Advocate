@@ -49,7 +49,7 @@ class Session(RequestsSession):
     def mount(self, *args, **kwargs):
         """Wrapper around `mount()` to prevent a protection bypass"""
         if self.__mount_allowed:
-            super(Session, self).mount(*args, **kwargs)
+            super().mount(*args, **kwargs)
         else:
             raise MountDisabledException(
                 "mount() is disabled to prevent protection bypasses"

@@ -37,4 +37,4 @@ class CheckedSocket(socket.socket):
             stack = traceback.extract_stack()
             if not any(self._check_frame_allowed(frame) for frame in stack):
                 raise DisallowedConnectException("calling socket.connect() unsafely!")
-        return super(CheckedSocket, self).connect(*args, **kwargs)
+        return super().connect(*args, **kwargs)
