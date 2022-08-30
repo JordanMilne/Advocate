@@ -1,4 +1,4 @@
-from requests.packages.urllib3 import HTTPConnectionPool, HTTPSConnectionPool
+from urllib3 import HTTPConnectionPool, HTTPSConnectionPool
 
 from .connection import (
     ValidatingHTTPConnection,
