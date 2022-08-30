@@ -12,7 +12,7 @@ class ValidatingHTTPAdapter(HTTPAdapter):
         self._validator = kwargs.pop('validator', None)
         if not self._validator:
             self._validator = AddrValidator()
-        super(ValidatingHTTPAdapter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def init_poolmanager(self, connections, maxsize, block=DEFAULT_POOLBLOCK,
                          **pool_kwargs):
