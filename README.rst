@@ -8,6 +8,7 @@ Advocate
 .. image:: https://img.shields.io/pypi/v/advocate.svg
     :target: https://pypi.python.org/pypi/advocate
 
+**Advocate is no longer maintained, please fork and rename if you would like to continue work on it**
 
 Advocate is a set of tools based around the `requests library <https://github.com/kennethreitz/requests>`_ for safely making
 HTTP requests on behalf of a third party. Specifically, it aims to prevent 
